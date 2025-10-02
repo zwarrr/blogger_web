@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login | Bloggerp</title>
+  <title>Register | Bloggerp</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,13 +31,13 @@
 
   <div class="relative bg-white rounded-xl flex overflow-hidden w-full max-w-4xl border border-gray-200">
     
-    <!-- Left: Login Form -->
+    <!-- Left: Register Form -->
     <div class="w-full md:w-1/2 p-8 lg:p-10 flex flex-col justify-center">
       
       <!-- Logo -->
       <div class="flex items-center gap-2 mb-8">
         <div class="bg-orange-500 w-10 h-10 rounded-full flex items-center justify-center text-white">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a7.93 7.93 0 01-4.9-1.7l9.2-9.2A8 8 0 0112 20zm5.9-3.3l-9.2-9.2A8 8 0 0117.9 16.7z"/>
           </svg>
         </div>
@@ -45,19 +45,30 @@
       </div>
 
       <!-- Title -->
-      <h1 class="text-2xl font-semibold text-gray-900 mb-2">Admin Login</h1>
-      <p class="text-gray-500 mb-6">Sign in to access admin dashboard</p>
+      <h1 class="text-2xl font-semibold text-gray-900 mb-2">Create Account</h1>
+      <p class="text-gray-500 mb-6">Sign up to get started with Blogger</p>
 
       <!-- Form -->
-      <form class="space-y-5" method="POST" action="{{ route('auth.login.post') }}">
+      <form class="space-y-5" method="POST" action="{{ route('auth.register.post') }}">
         @csrf
+
+        <!-- Name -->
+        <div class="relative">
+          <input name="name" type="text" placeholder="Full Name" value="{{ old('name') }}"
+            class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition" />
+          <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5z"/>
+            </svg>
+          </span>
+        </div>
 
         <!-- Email -->
         <div class="relative">
           <input name="email" type="email" placeholder="Email address" value="{{ old('email') }}"
             class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition" />
           <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M20 4H4a2 2 0 0 0-2 2v1.2l10 5.8 10-5.8V6a2 2 0 0 0-2-2z"/><path d="M22 8.3l-10 5.8-10-5.8V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8.3z"/>
             </svg>
           </span>
@@ -68,33 +79,35 @@
           <input id="password" name="password" type="password" placeholder="Password"
             class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition" />
           <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-5 8a2 2 0 1 1 2-2 2 2 0 0 1-2 2zm-3-8V7a3 3 0 0 1 6 0v2z"/>
             </svg>
           </span>
         </div>
 
-        <!-- Options -->
-        <div class="flex items-center justify-between text-sm">
-          <label class="flex items-center gap-2 text-gray-600">
-            <input name="remember" type="checkbox" class="rounded text-orange-600 focus:ring-orange-500">
-            Remember me
-          </label>
-          <!-- No user forgot password/registration for now -->
-          <span class="text-gray-400">&nbsp;</span>
+        <!-- Confirm Password -->
+        <div class="relative">
+          <input id="password_confirmation" name="password_confirmation" type="password" placeholder="Confirm Password"
+            class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition" />
+          <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 17a2 2 0 100-4 2 2 0 000 4z"/><path d="M6 8V7a6 6 0 1112 0v1h1a1 1 0 011 1v11a1 1 0 01-1 1H5a1 1 0 01-1-1V9a1 1 0 011-1h1zm2 0h8V7a4 4 0 00-8 0v1z"/>
+            </svg>
+          </span>
         </div>
 
-        <!-- Login Button -->
+        <!-- Register Button -->
         <button type="submit"
           class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-md transition">
-          Login
+          Register
         </button>
       </form>
+
       <div class="text-sm text-gray-600 mt-4">
-        Belum punya akun author? 
-        <a href="{{ route('auth.register') }}" class="text-orange-600 hover:underline">Daftar di sini</a>
+        Sudah punya akun author? 
+        <a href="{{ route('auth.login') }}" class="text-orange-600 hover:underline">Login di sini</a>
       </div>
-      
+
     </div>
 
     <!-- Right: Orange Panel with Particles -->
@@ -109,7 +122,7 @@
       <!-- Content -->
       <div class="text-white text-center space-y-3 relative z-10">
         <h2 class="text-3xl font-bold">Blogger</h2>
-        <p class="max-w-sm text-orange-100 text-sm">Your trusted platform to manage, create, and grow your projects effortlessly.</p>
+        <p class="max-w-sm text-orange-100 text-sm">Join Blogger today and start creating, managing, and growing your projects.</p>
       </div>
     </div>
   </div>

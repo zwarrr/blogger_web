@@ -10,13 +10,16 @@
   <style> 
     body { font-family: 'Inter', sans-serif; }
     .article-content { 
-      font-size: 1.0625rem; 
-      line-height: 1.75; 
+      font-size: 1rem; 
       color: #374151;
     }
-    .article-content p { 
-      margin-bottom: 1.25rem; 
+    /* PERBAIKAN FINAL: Targetkan P dan DIV (untuk konten utama) dengan !important */
+    .article-content p, 
+    .article-content div { 
+      line-height: 1.6 !important; 
+      margin-bottom: 1rem; 
     }
+    
     @keyframes fadeInUp {
       from {
         opacity: 0;
@@ -74,11 +77,142 @@
       }
     }
   </script>
+  <style>
+    /* Page transition animations */
+    .page-transition {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%) !important;
+      backdrop-filter: blur(8px) !important;
+      z-index: 99999 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+      pointer-events: none;
+    }
+
+    .page-transition.active {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: all !important;
+    }
+
+    .spinner-circle {
+      animation: dashOffset 2s ease-in-out infinite;
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: 0;
+      transform-origin: center;
+    }
+
+    .loading-text {
+      color: #FFCCBC;
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      animation: pulse 2s ease-in-out infinite;
+      user-select: none;
+      margin-top: 1.25rem;
+    }
+
+    @keyframes dashOffset {
+      0% {
+        stroke-dasharray: 1, 150;
+        stroke-dashoffset: 0;
+      }
+      50% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -35;
+      }
+      100% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -124;
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.7;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    /* Fade in animation for page load */
+    .fade-in-page {
+      opacity: 0;
+      animation: fadeInPage 0.8s ease-out forwards;
+    }
+
+    @keyframes fadeInPage {
+      to {
+        opacity: 1;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50 text-gray-800 antialiased">
+<body class="bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50 text-gray-800 antialiased lg:overflow-hidden lg:h-screen fade-in-page">
+  
+  <script>
+    // Initial loading for detail page (auto-hide)
+    (function() {
+      const initialLoading = document.createElement('div');
+      initialLoading.id = 'initialDetailLoading';
+      initialLoading.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:linear-gradient(135deg,#1a1a1a,#2d2d2d,#1a1a1a);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+      initialLoading.innerHTML = `
+        <div style="width:80px;height:80px;border:4px solid #333;border-top:4px solid #FF5722;border-radius:50%;animation:spin 1s linear infinite"></div>
+        <p style="color:#FFCCBC;font-size:18px;font-weight:600;margin-top:20px">Memuat artikel...</p>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+      `;
+      document.body.appendChild(initialLoading);
+      
+      // Auto-hide with multiple triggers
+      const hideInitial = () => {
+        if (initialLoading.parentNode) {
+          initialLoading.style.opacity = '0';
+          initialLoading.style.transition = 'opacity 0.3s';
+          setTimeout(() => initialLoading.remove(), 300);
+        }
+      };
+      
+      // Hide on DOM ready
+      if (document.readyState !== 'loading') {
+        setTimeout(hideInitial, 100);
+      } else {
+        document.addEventListener('DOMContentLoaded', hideInitial, { once: true });
+      }
+      
+      // Force hide after 2 seconds
+      setTimeout(hideInitial, 2000);
+    })();
+  </script>
+
+  <!-- Page Transition Overlay (Hidden by default) -->
+  <div class="page-transition" id="pageTransition" style="opacity: 0; visibility: hidden; pointer-events: none; display: none;">
+    <svg class="w-24 h-24 text-[#FF5722]" viewBox="0 0 50 50">
+      <circle
+        class="spinner-circle"
+        cx="25"
+        cy="25"
+        r="20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="4"
+        stroke-linecap="round"
+      />
+    </svg>
+    <p class="loading-text">Memuat...</p>
+  </div>
   <header class="bg-white/90 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-50 shadow-sm">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="{{ route('user.views') }}" class="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700 transition-all hover:-translate-x-1 duration-200">
+      <a href="{{ route('user.views') }}" class="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700 transition-all hover:-translate-x-1 duration-200 page-link">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
@@ -88,28 +222,29 @@
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-8 sm:py-12">
-    <!-- Container Background -->
-    <div class="bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-200/60 shadow-2xl shadow-gray-300/20 p-4 sm:p-6">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Left Sidebar (Metadata, Cover, Share) -->
+  <main class="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+    <div class="bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-200/60 shadow-2xl shadow-gray-300/20 p-3 sm:p-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <aside class="lg:col-span-4">
-          <!-- Title Card -->
-          <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xl shadow-gray-200/50 p-5 animate-fade-in-up sticky top-24 overflow-hidden" style="max-height: calc(100vh - 7rem);">
-            <h1 class="text-xl sm:text-2xl font-bold text-gray-900 leading-tight mb-4">
+          <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xl shadow-gray-200/50 p-4 animate-fade-in-up sticky top-24 overflow-hidden" style="max-height: calc(100vh - 7rem);">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900 leading-tight mb-3">
               {{ $post->title }}
             </h1>
             
-            <!-- Cover Image -->
-            <div class="relative h-36 rounded-xl overflow-hidden mb-4">
+            <div class="relative h-32 rounded-xl overflow-hidden mb-3">
             <img src="{{ $post->thumbnail ?? $post->cover_image ?? 'https://via.placeholder.com/600x400?text=No+Cover' }}" 
                  alt="{{ $post->title }}" 
                  class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700">
             <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent"></div>
           </div>
 
-          <!-- Meta Information -->
-          <div class="space-y-2 text-xs text-gray-600 pb-4 border-b border-gray-100">
+          <div class="space-y-5 text-xs text-gray-600 pb-3 border-b border-gray-100">
+            @if($post->category)
+            <div class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg w-full" style="background-color: {{ $post->category->color }}15; color: {{ $post->category->color }}">
+              <span class="text-base">{{ $post->category->icon }}</span>
+              <span class="font-semibold">{{ $post->category->name }}</span>
+            </div>
+            @endif
             <div class="inline-flex items-center gap-2 bg-gray-50 px-2.5 py-1.5 rounded-lg w-full">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-brand-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -139,278 +274,227 @@
             </div>
           </div>
 
-          <!-- Share Section -->
-          <div class="mt-4 pt-4 border-t border-gray-100">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-md flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="18" cy="5" r="3"></circle>
-                  <circle cx="6" cy="12" r="3"></circle>
-                  <circle cx="18" cy="19" r="3"></circle>
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                </svg>
-              </span>
-              <div>
+          <div class="mt-3 pt-3 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-md flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                </span>
                 <p class="text-xs font-semibold text-gray-900">Bagikan Artikel</p>
-                <p class="text-[10px] text-gray-500">Sebarkan ke temanmu</p>
               </div>
-            </div>
-            <div class="grid grid-cols-2 gap-1.5">
-              <a target="_blank" rel="noopener" class="hover-lift inline-flex items-center justify-center gap-1.5 bg-[#1877F2] text-white hover:bg-[#166FE5] rounded-lg px-2 py-2 text-xs font-semibold shadow-md transition-all" href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(request()->fullUrl()) }}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-                <span>Facebook</span>
-              </a>
-              <a target="_blank" rel="noopener" class="hover-lift inline-flex items-center justify-center gap-1.5 bg-[#000000] text-white hover:bg-[#1a1a1a] rounded-lg px-2 py-2 text-xs font-semibold shadow-md transition-all" href="https://twitter.com/intent/tweet?url={{ urlencode(request()->fullUrl()) }}&text={{ urlencode($post->title) }}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-                <span>Twitter</span>
-              </a>
-              <a target="_blank" rel="noopener" class="hover-lift inline-flex items-center justify-center gap-1.5 bg-[#0A66C2] text-white hover:bg-[#095196] rounded-lg px-2 py-2 text-xs font-semibold shadow-md transition-all" href="https://www.linkedin.com/sharing/share-offsite/?url={{ urlencode(request()->fullUrl()) }}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-                <span>LinkedIn</span>
-              </a>
-              <button type="button" class="hover-lift inline-flex items-center justify-center gap-1.5 bg-gray-700 text-white hover:bg-gray-800 rounded-lg px-2 py-2 text-xs font-semibold shadow-md transition-all" onclick="navigator.clipboard.writeText(window.location.href); this.innerHTML='<svg xmlns=\'http://www.w3.org/2000/svg\' class=\'h-3.5 w-3.5\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'20 6 9 17 4 12\'></polyline></svg><span>Tersalin!</span>'; setTimeout(() => this.innerHTML='<svg xmlns=\'http://www.w3.org/2000/svg\' class=\'h-3.5 w-3.5\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'9\' y=\'9\' width=\'13\' height=\'13\' rx=\'2\' ry=\'2\'></rect><path d=\'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\'></path></svg><span>Salin</span>', 2000)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <button type="button" aria-label="Salin tautan" class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gray-800 text-white hover:bg-gray-900 shadow-sm hover:shadow transition" onclick="navigator.clipboard.writeText(window.location.href); this.classList.add('ring-2','ring-brand-500'); setTimeout(()=> this.classList.remove('ring-2','ring-brand-500'), 1200)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
-                <span>Salin</span>
               </button>
             </div>
           </div>
           </div>
         </aside>
 
-        <!-- Right Content (Article & Comments) -->
         <div class="lg:col-span-8">
-        <div class="space-y-8 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2" style="scrollbar-width: thin; scrollbar-color: #EA580C transparent;">
-          <!-- Article Content -->
-          <article class="bg-white rounded-2xl border border-gray-200/80 shadow-xl shadow-gray-200/50 p-6 sm:p-10 animate-fade-in-up">
-            <div class="article-content prose prose-lg max-w-none">
-              <div class="whitespace-pre-line text-gray-700">{!! nl2br(e($post->content)) !!}</div>
-            </div>
-          </article>
-
-          <!-- Comments Section -->
+        <div class="lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2" style="scrollbar-width: thin; scrollbar-color: #EA580C transparent;">
           <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xl shadow-gray-200/50 overflow-hidden animate-fade-in-up">
-      <div class="px-6 py-6 sm:px-10 sm:py-8 border-b border-gray-100">
-        <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
-          <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-          </span>
-          <span>Komentar</span>
-        </h2>
-        <p class="mt-2 text-sm text-gray-600">Berikan pendapat atau tanggapan Anda tentang artikel ini</p>
-      </div>
+            <div class="p-4 sm:p-5">
+              <div class="article-content prose prose-lg max-w-none">
+                <div class="whitespace-pre-line text-gray-700">{!! nl2br(e($post->content)) !!}</div>
+              </div>
+            </div>
+            <div class="border-t border-gray-100"></div>
 
-      <!-- Comment Form -->
-      <div class="px-6 py-6 sm:px-10 sm:py-8 bg-gray-50/50">
-        <form action="#" method="POST" class="space-y-4">
-          @csrf
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">
-                <span class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
+            <div class="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-100">
+              <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                   </svg>
-                  Nama
                 </span>
-              </label>
-              <input type="text" id="name" name="name" required
-                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none text-gray-900"
-                     placeholder="Masukkan nama Anda">
+                <span>Komentar</span>
+              </h2>
+              <p class="mt-0.5 text-xs text-gray-600">Berikan pendapat atau tanggapan Anda tentang artikel ini</p>
             </div>
-            <div>
-              <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
-                <span class="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
-                  Email
-                </span>
-              </label>
-              <input type="email" id="email" name="email" required
-                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none text-gray-900"
-                     placeholder="email@example.com">
+
+            <div class="px-4 py-3 sm:px-5 sm:py-4 bg-gray-50/50">
+              @if(session('success'))
+                <div class="mb-4 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">{{ session('success') }}</div>
+              @endif
+              <form action="{{ route('comments.store', $post->id) }}" method="POST" class="space-y-3">
+                @csrf
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label for="name" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                      <span class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        Nama
+                      </span>
+                    </label>
+                    <input type="text" id="name" name="name" required
+                           class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none text-gray-900"
+                           placeholder="Masukkan nama Anda">
+                  </div>
+                  <div>
+                    <label for="email" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                      <span class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                          <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        Email
+                      </span>
+                    </label>
+                    <input type="email" id="email" name="email" required
+                           class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none text-gray-900"
+                           placeholder="email@example.com">
+                  </div>
+                </div>
+                
+                <div>
+                  <label for="comment" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                    <span class="flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                      </svg>
+                      Komentar
+                    </span>
+                  </label>
+                  <textarea id="comment" name="comment" rows="2" required
+                            class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none text-gray-900 resize-none"
+                            placeholder="Tulis komentar Anda di sini..."></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                  <p class="text-xs text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    Email Anda tidak akan dipublikasikan
+                  </p>
+                  <button type="submit" 
+                          class="inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700 px-5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                    Kirim Komentar
+                  </button>
+                </div>
+              </form>
             </div>
-          </div>
-          
-          <div>
-            <label for="comment" class="block text-sm font-semibold text-gray-700 mb-2">
-              <span class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+
+            <div class="px-4 py-3 sm:px-5 sm:py-4">
+              <h3 class="text-sm font-bold text-gray-900 mb-2.5 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                Komentar
-              </span>
-            </label>
-            <textarea id="comment" name="comment" rows="4" required
-                      class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none text-gray-900 resize-none"
-                      placeholder="Tulis komentar Anda di sini..."></textarea>
-          </div>
+                <span>{{ ($comments->count() ?? 0) }} Komentar</span>
+              </h3>
 
-          <div class="flex items-center justify-between">
-            <p class="text-xs text-gray-500">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
-              Email Anda tidak akan dipublikasikan
-            </p>
-            <button type="submit" 
-                    class="inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700 px-6 py-3 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-              Kirim Komentar
-            </button>
-          </div>
-        </form>
-      </div>
+              <div class="space-y-2.5">
+                @forelse($comments as $c)
+                  <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 hover:border-brand-200 transition-colors">
+                    <div class="flex gap-2.5">
+                      <div class="flex-shrink-0">
+                        <div class="h-9 w-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                          {{ strtoupper(substr($c->name,0,1)) }}
+                        </div>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 mb-0.5">
+                          <h4 class="font-semibold text-sm text-gray-900">{{ $c->name }}</h4>
+                          <span class="text-xs text-gray-400">•</span>
+                          <time class="text-xs text-gray-500">{{ optional($c->created_at)->diffForHumans() }}</time>
+                        </div>
+                        <p class="text-xs text-gray-700 leading-relaxed">{{ $c->body }}</p>
+                        <div class="mt-2 flex items-center gap-3">
+                          <form method="POST" action="{{ route('comments.like', [$post->id, $c->id]) }}" class="inline">
+                            @csrf
+                            <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors" type="submit">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                              </svg>
+                              <span class="font-medium">Suka ({{ $c->likes ?? 0 }})</span>
+                            </button>
+                          </form>
+                          <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors" type="button" onclick="document.getElementById('reply-{{ $c->id }}').classList.toggle('hidden')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="9 11 12 14 22 4"></polyline>
+                              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                            <span class="font-medium">Balas</span>
+                          </button>
+                        </div>
 
-      <!-- Comments List -->
-      <div class="px-6 py-6 sm:px-10 sm:py-8">
-        <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          <span>3 Komentar</span>
-        </h3>
+                        <div id="reply-{{ $c->id }}" class="mt-4 hidden">
+                          <form action="{{ route('comments.reply', [$post->id, $c->id]) }}" method="POST" class="space-y-3">
+                            @csrf
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <input type="text" name="name" required placeholder="Nama" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                              <input type="email" name="email" required placeholder="Email" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                            </div>
+                            <textarea name="comment" rows="3" required placeholder="Tulis balasan..." class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none"></textarea>
+                            <div class="flex justify-end">
+                              <button type="submit" class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm">Kirim Balasan</button>
+                            </div>
+                          </form>
+                        </div>
 
-        <div class="space-y-6">
-          <!-- Sample Comment 1 -->
-          <div class="flex gap-4 p-5 bg-gray-50 rounded-xl border border-gray-200 hover:border-brand-200 transition-colors">
-            <div class="flex-shrink-0">
-              <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                A
-              </div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <h4 class="font-semibold text-gray-900">Ahmad Rizki</h4>
-                <span class="text-xs text-gray-500">•</span>
-                <time class="text-xs text-gray-500">2 jam yang lalu</time>
-              </div>
-              <p class="text-sm text-gray-700 leading-relaxed">
-                Artikel yang sangat informatif! Penjelasannya mudah dipahami dan memberikan wawasan baru untuk saya. Terima kasih sudah berbagi.
-              </p>
-              <div class="mt-3 flex items-center gap-4">
-                <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                  </svg>
-                  <span class="font-medium">Suka (12)</span>
-                </button>
-                <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                  </svg>
-                  <span class="font-medium">Balas</span>
-                </button>
-              </div>
-            </div>
-          </div>
+                        @if($c->replies && $c->replies->count())
+                          <div class="mt-2.5 space-y-2 pl-3 border-l-2 border-gray-200">
+                            @foreach($c->replies as $r)
+                              <div class="flex gap-2.5">
+                                <div class="flex-shrink-0">
+                                  <div class="h-8 w-8 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-xs shadow">
+                                    {{ strtoupper(substr($r->name,0,1)) }}
+                                  </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                  <div class="flex items-center gap-1.5 mb-0.5">
+                                    <h5 class="font-semibold text-gray-900 text-xs">{{ $r->name }}</h5>
+                                    <span class="text-xs text-gray-400">•</span>
+                                    <time class="text-xs text-gray-500">{{ optional($r->created_at)->diffForHumans() }}</time>
+                                  </div>
+                                  <p class="text-xs text-gray-700 leading-relaxed">{{ $r->body }}</p>
+                                  <div class="mt-2">
+                                    <form method="POST" action="{{ route('comments.like', [$post->id, $r->id]) }}" class="inline">
+                                      @csrf
+                                      <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors" type="submit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                        </svg>
+                                        <span class="font-medium">Suka ({{ $r->likes ?? 0 }})</span>
+                                      </button>
+                                    </form>
+                                  </div>
+                                </div>
+                              </div>
+                            @endforeach
+                          </div>
+                        @endif
 
-          <!-- Sample Comment 2 -->
-          <div class="flex gap-4 p-5 bg-gray-50 rounded-xl border border-gray-200 hover:border-brand-200 transition-colors">
-            <div class="flex-shrink-0">
-              <div class="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                S
-              </div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <h4 class="font-semibold text-gray-900">Siti Nurhaliza</h4>
-                <span class="text-xs text-gray-500">•</span>
-                <time class="text-xs text-gray-500">5 jam yang lalu</time>
-              </div>
-              <p class="text-sm text-gray-700 leading-relaxed">
-                Sangat membantu! Saya sudah menunggu artikel seperti ini. Penjelasannya detail dan mudah diikuti.
-              </p>
-              <div class="mt-3 flex items-center gap-4">
-                <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                  </svg>
-                  <span class="font-medium">Suka (8)</span>
-                </button>
-                <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                  </svg>
-                  <span class="font-medium">Balas</span>
-                </button>
+                      </div>
+                    </div>
+                  </div>
+                @empty
+                  <p class="text-sm text-gray-500">Belum ada komentar. Jadilah yang pertama!</p>
+                @endforelse
               </div>
             </div>
           </div>
-
-          <!-- Sample Comment 3 -->
-          <div class="flex gap-4 p-5 bg-gray-50 rounded-xl border border-gray-200 hover:border-brand-200 transition-colors">
-            <div class="flex-shrink-0">
-              <div class="h-12 w-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                B
-              </div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <h4 class="font-semibold text-gray-900">Budi Santoso</h4>
-                <span class="text-xs text-gray-500">•</span>
-                <time class="text-xs text-gray-500">1 hari yang lalu</time>
-              </div>
-              <p class="text-sm text-gray-700 leading-relaxed">
-                Konten yang berkualitas! Terus berkarya dan semoga bisa membuat artikel-artikel bermanfaat lainnya. 👍
-              </p>
-              <div class="mt-3 flex items-center gap-4">
-                <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                  </svg>
-                  <span class="font-medium">Suka (15)</span>
-                </button>
-                <button class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-brand-600 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                  </svg>
-                  <span class="font-medium">Balas</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Load More Button -->
-        @php
-          $totalComments = 3; // Ganti dengan jumlah komentar sebenarnya dari database
-        @endphp
-        @if($totalComments > 3)
-        <div class="mt-8 text-center">
-          <button class="inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-semibold text-sm transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-            Muat Lebih Banyak Komentar
-          </button>
-        </div>
-        @endif
       </div>
     </div>
         </div>
@@ -419,11 +503,8 @@
     </div>
   </main>
 
-  <footer class="py-8 border-t border-gray-200 bg-white/60">
-  <div class="max-w-6xl mx-auto px-4 text-center text-xs text-gray-500">
-    <span>© {{ date('Y') }} <span class="font-semibold text-gray-700">Blogger</span></span>
-  </div>
-</footer>
+  <!-- Enhanced Animation System -->
+  @vite(['resources/js/animations.js'])
 
 </body>
 </html>

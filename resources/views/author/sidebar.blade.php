@@ -1,32 +1,28 @@
-<!-- resources/views/admin/sidebar.blade.php -->
+<!-- resources/views/author/sidebar.blade.php -->
 <aside class="fixed left-0 top-0 w-64 h-screen bg-gradient-to-b from-white to-gray-100 text-gray-800 flex flex-col px-6 py-8 shadow-2xl border-r border-gray-200 z-20 overflow-visible">
   <!-- Logo / Brand -->
   <div class="flex items-center gap-2 mb-12">
     <div class="bg-orange-500 w-9 h-9 rounded-full flex items-center justify-center text-white">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM7.1 17.9l9.8-9.8A8 8 0 017.1 17.9zM12 20a7.9 7.9 0 01-4.9-1.7l9.2-9.2A8 8 0 0112 20z"/></svg>
     </div>
-    <h1 class="text-xl font-semibold text-gray-800">Blogger Admin</h1>
+    <h1 class="text-xl font-semibold text-gray-800">Author</h1>
   </div>
 
-  @php($displayName = auth('admin')->user()->name ?? null)
+  @php($displayName = auth()->user()->name ?? null)
 
   <!-- Navigation -->
   <nav class="flex flex-col space-y-4 text-sm font-medium">
-    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.dashboard') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7m-9 2v6m-4 4h16v-6a2 2 0 00-2-2H7a2 2 0 00-2 2v6z"/></svg>
+    <a href="{{ route('author.dashboard') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('author.dashboard') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path d="M3 12l2-2m0 0l7-7 7 7m-9 2v6m-4 4h16v-6a2 2 0 00-2-2H7a2 2 0 00-2 2v6z"/>
+      </svg>
       Dashboard
     </a>
-    <a href="{{ route('admin.posts.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.posts*') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 17h2M18 17h2M12 3v6M5 8l1.5 3M18 8l-1.5 3M9 13h6v6H9z"/></svg>
+    <a href="{{ route('author.posts.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('author.posts*') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path d="M4 17h2M18 17h2M12 3v6M5 8l1.5 3M18 8l-1.5 3M9 13h6v6H9z"/>
+      </svg>
       Manage Posts
-    </a>
-    <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.users*') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-      Author Management
-    </a>
-    <a href="{{ route('admin.comments.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.comments*') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a4 4 0 01-4 4H7l-4 4V7a4 4 0 014-4h10a4 4 0 014 4v8z"/></svg>
-      Manage Comment
     </a>
   </nav>
 
@@ -36,27 +32,41 @@
   <!-- Profile with Dropdown to the RIGHT -->
   <div x-data="{ open: false }" class="relative flex items-center">
     <button @click="open = !open" class="w-full flex items-center gap-3 px-3 py-3 rounded-md bg-gray-100 hover:bg-gray-200 transition">
-      <img src="https://ui-avatars.com/api/?name={{ urlencode($displayName ?? 'A') }}&background=f97316&color=fff" alt="Avatar" class="w-8 h-8 rounded-full ring-2 ring-orange-300" />
-      <span class="text-sm font-semibold truncate">{{ $displayName ?? 'Admin' }}</span>
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-auto transform transition-transform" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      <img src="https://ui-avatars.com/api/?name={{ urlencode($displayName ?? 'U') }}&background=f97316&color=fff" alt="Avatar" class="w-8 h-8 rounded-full ring-2 ring-orange-300" />
+      <span class="text-sm font-semibold truncate">{{ $displayName ?? 'Pengguna' }}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-auto transform transition-transform" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
     </button>
 
-    <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95" class="absolute left-full ml-4 bottom-0 w-60 bg-white text-gray-800 rounded-xl shadow-xl ring-1 ring-black/10 z-50 overflow-hidden" style="min-width:15rem; display: none;">
+    <div
+      x-show="open"
+      @click.away="open = false"
+      x-transition:enter="transition ease-out duration-150"
+      x-transition:enter-start="opacity-0 transform scale-95"
+      x-transition:enter-end="opacity-100 transform scale-100"
+      x-transition:leave="transition ease-in duration-100"
+      x-transition:leave-start="opacity-100 transform scale-100"
+      x-transition:leave-end="opacity-0 transform scale-95"
+      class="absolute left-full ml-4 bottom-0 w-60 bg-white text-gray-800 rounded-xl shadow-xl ring-1 ring-black/10 z-50 overflow-hidden"
+      style="min-width:15rem; display: none;"
+    >
       <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-white font-bold">
             @if($displayName ?? null)
               {{ strtoupper(substr($displayName, 0, 1)) }}
             @else
-              Admin
+              User
             @endif
           </div>
           <div>
-            <p class="font-semibold">{{ $displayName ?? 'Admin' }}</p>
-            <p class="text-sm text-orange-100">Akun Admin</p>
+            <p class="font-semibold">{{ $displayName ?? 'User' }}</p>
+            <p class="text-sm text-orange-100">Akun Author</p>
           </div>
         </div>
       </div>
+
       <div class="py-2">
         <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors">
           <svg class="w-4 h-4 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -69,7 +79,7 @@
           <span class="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Soon</span>
         </a>
         <div class="border-t border-gray-100 my-2"></div>
-        <form method="POST" action="{{ route('admin.logout') }}" class="px-4 py-2">
+        <form method="POST" action="{{ route('author.logout') }}" class="px-4 py-2">
           @csrf
           <button type="submit" class="flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded transition-colors">
             <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>

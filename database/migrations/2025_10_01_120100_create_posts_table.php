@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('posts', function (Blueprint $table) {
             $table->string('id')->primary(); // custom string id e.g., POST001
             $table->string('title');
+            $table->foreignId('category_id')->nullable()->constrained('categories')->onDelete('set null');
             $table->text('description')->nullable();
             $table->string('location')->nullable();
             $table->timestamp('published_at')->nullable();

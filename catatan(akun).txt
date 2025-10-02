@@ -1,0 +1,5 @@
+admin : admin@gmail.com
+pass  : admin987
+
+author(user) : berita@gmail.com
+pass         : berita123
