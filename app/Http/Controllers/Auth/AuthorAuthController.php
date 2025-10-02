@@ -10,55 +10,38 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthorAuthController extends Controller
 {
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
+        // Only allow access through /auth/login URL
+        if (!$request->is('auth/login')) {
+            abort(404, 'Halaman tidak ditemukan. Gunakan URL: ' . url('/auth/login'));
+        }
+        
         return view('auth.login');
     }
 
-    public function showRegisterForm()
-    {
-        return view('auth.register');
-    }
 
-    public function register(Request $request)
-    {
-        $data = $request->validate([
-            'name' => ['required','string','max:255'],
-            'email' => ['required','email','max:255','unique:users,email'],
-            'password' => ['required','string','min:6','confirmed'],
-        ]);
 
-        // Generate custom incremental ID: USERBLOG001 (reuse logic similar to AdminUserController)
-        $prefix = 'USERBLOG';
-        $last = User::where('id', 'like', $prefix.'%')->orderBy('id', 'desc')->value('id');
-        $num = 0;
-        if ($last && preg_match('/^'.preg_quote($prefix, '/').'([0-9]{3,})$/', $last, $m)) {
-            $num = intval($m[1]);
-        }
-        $next = $prefix . str_pad((string)($num + 1), 3, '0', STR_PAD_LEFT);
 
-        $user = User::create([
-            'id' => $next,
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => 'author',
-        ]);
-
-        Auth::login($user);
-        $request->session()->regenerate();
-        return redirect()->intended('/author/dashboard');
-    }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required','email'],
+            'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        // Use default web guard, but ensure role author
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $email = $credentials['email'];
+        $password = $credentials['password'];
+
+        // Try admin login first
+        if (Auth::guard('admin')->attempt(['email' => $email, 'password' => $password], $request->boolean('remember'))) {
+            $request->session()->regenerate();
+            return redirect()->intended('/admin/dashboard');
+        }
+
+        // Try author login
+        if (Auth::attempt(['email' => $email, 'password' => $password], $request->boolean('remember'))) {
             $request->session()->regenerate();
             if (Auth::user()->role === 'author') {
                 return redirect()->intended('/author/dashboard');
@@ -66,14 +49,21 @@ class AuthorAuthController extends Controller
             Auth::logout();
         }
 
-        return back()->withErrors(['email' => 'Email atau password salah, atau bukan akun author.'])->onlyInput('email');
+        return back()->withErrors([
+            'email' => 'Email atau password salah.',
+        ])->onlyInput('email');
     }
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        if (Auth::guard('admin')->check()) {
+            Auth::guard('admin')->logout();
+        } else {
+            Auth::logout();
+        }
+        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('author.login');
+        return redirect()->route('auth.login');
     }
 }

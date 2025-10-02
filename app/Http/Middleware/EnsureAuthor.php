@@ -12,7 +12,7 @@ class EnsureAuthor
     public function handle(Request $request, Closure $next): Response
     {
         if (!Auth::check() || Auth::user()->role !== 'author') {
-            return redirect()->to('/author/login');
+            return redirect()->route('auth.login');
         }
         return $next($request);
     }

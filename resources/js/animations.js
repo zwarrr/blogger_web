@@ -48,20 +48,20 @@ class BloggerAnimations {
             e.preventDefault();
             
             // Determine loading text based on link context
-            let loadingText = 'Memuat halaman...';
+            let loadingText = 'loadinggg......';
             const linkText = link.textContent.trim().toLowerCase();
             const linkHref = href.toLowerCase();
             
             if (linkText.includes('baca') || linkText.includes('read') || linkHref.includes('post')) {
-                loadingText = 'Memuat artikel...';
+                loadingText = 'loadinggg......';
             } else if (linkText.includes('home') || linkText.includes('beranda') || linkHref === '/' || linkHref.includes('home')) {
-                loadingText = 'Kembali ke beranda...';
+                loadingText = 'loadinggg......';
             } else if (linkText.includes('detail') || linkHref.includes('detail')) {
-                loadingText = 'Memuat detail...';
+                loadingText = 'loadinggg......';
             } else if (linkText.includes('kategori') || linkText.includes('category')) {
-                loadingText = 'Memuat kategori...';
+                loadingText = 'loadinggg......';
             } else if (linkText.includes('search') || linkText.includes('cari')) {
-                loadingText = 'Mencari...';
+                loadingText = 'loadinggg......';
             }
             
             // Show loading and navigate with faster duration
@@ -74,11 +74,11 @@ class BloggerAnimations {
         window.addEventListener('popstate', () => {
             this.showTransition(() => {
                 // Page will reload automatically
-            }, 'Memuat halaman...', 300);
+            }, 'loadinggg......', 300);
         });
     }
 
-    showTransition(callback, loadingText = 'Memuat halaman...', duration = 500) {
+    showTransition(callback, loadingText = 'loadinggg......', duration = 500) {
         if (this.pageTransition) {
             // Clear any existing timeout to prevent stuck loading
             if (this.loadingTimeout) {
@@ -190,7 +190,7 @@ class BloggerAnimations {
     setupInitialPageLoad() {
         // Show loading immediately when page starts loading
         if (document.readyState === 'loading') {
-            this.showLoadingImmediately('Memuat halaman...');
+            this.showLoadingImmediately('loadinggg......');
         }
         
         // Hide loading when page is fully loaded
@@ -208,13 +208,13 @@ class BloggerAnimations {
         });
     }
     
-    // Setup loading saat keluar halaman
+    // Setup loading when leaving page
     setupPageUnload() {
         // Show loading when user is leaving the page (only for actual navigation)
         window.addEventListener('beforeunload', (e) => {
             // Only show if user is actually navigating away, not just refreshing or closing tab
             if (e.returnValue !== undefined) {
-                this.showLoadingImmediately('Keluar dari halaman...');
+                this.showLoadingImmediately('loadinggg......');
             }
         });
         
@@ -223,7 +223,7 @@ class BloggerAnimations {
     }
     
     // Show loading immediately without timeout
-    showLoadingImmediately(loadingText = 'Loading...') {
+    showLoadingImmediately(loadingText = 'loadinggg......') {
         if (this.pageTransition) {
             this.pageTransition.style.opacity = '1';
             this.pageTransition.style.visibility = 'visible';
@@ -248,42 +248,42 @@ class BloggerAnimations {
             const buttonClass = button.className.toLowerCase();
             const form = button.closest('form');
             
-            let loadingText = 'Memproses...';
+            let loadingText = 'loadinggg......';
             let duration = 600;
             
             // Determine loading message based on button context
             if (buttonText.includes('simpan') || buttonText.includes('save')) {
-                loadingText = 'Menyimpan data...';
+                loadingText = 'loadinggg......';
                 duration = 800;
             } else if (buttonText.includes('hapus') || buttonText.includes('delete')) {
-                loadingText = 'Menghapus data...';
+                loadingText = 'loadinggg......';
                 duration = 600;
             } else if (buttonText.includes('edit') || buttonText.includes('update')) {
-                loadingText = 'Memperbarui data...';
+                loadingText = 'loadinggg......';
                 duration = 700;
             } else if (buttonText.includes('tambah') || buttonText.includes('create') || buttonText.includes('add')) {
-                loadingText = 'Menambah data...';
+                loadingText = 'loadinggg......';
                 duration = 700;
             } else if (buttonText.includes('login') || buttonText.includes('masuk')) {
-                loadingText = 'Masuk ke sistem...';
+                loadingText = 'loadinggg......';
                 duration = 800;
             } else if (buttonText.includes('register') || buttonText.includes('daftar')) {
-                loadingText = 'Mendaftarkan akun...';
+                loadingText = 'loadinggg......';
                 duration = 900;
             } else if (buttonText.includes('search') || buttonText.includes('cari')) {
-                loadingText = 'Mencari data...';
+                loadingText = 'loadinggg......';
                 duration = 500;
             } else if (buttonText.includes('kirim') || buttonText.includes('submit')) {
-                loadingText = 'Mengirim data...';
+                loadingText = 'loadinggg......';
                 duration = 600;
             } else if (buttonText.includes('upload')) {
-                loadingText = 'Mengunggah file...';
+                loadingText = 'loadinggg......';
                 duration = 1000;
             } else if (buttonClass.includes('btn-danger') || buttonClass.includes('delete')) {
-                loadingText = 'Menghapus...';
+                loadingText = 'loadinggg......';
                 duration = 500;
             } else if (buttonClass.includes('btn-success') || buttonClass.includes('save')) {
-                loadingText = 'Menyimpan...';
+                loadingText = 'loadinggg......';
                 duration = 600;
             }
             
@@ -307,29 +307,29 @@ class BloggerAnimations {
             const action = form.getAttribute('action') || '';
             const method = form.getAttribute('method') || 'GET';
             
-            let loadingText = 'Mengirim data...';
+            let loadingText = 'loadinggg......';
             let duration = 700;
             
             if (action.includes('login')) {
-                loadingText = 'Masuk ke sistem...';
+                loadingText = 'loadinggg......';
                 duration = 800;
             } else if (action.includes('register')) {
-                loadingText = 'Mendaftarkan akun...';
+                loadingText = 'loadinggg......';
                 duration = 900;
             } else if (action.includes('comment')) {
-                loadingText = 'Mengirim komentar...';
+                loadingText = 'loadinggg......';
                 duration = 600;
             } else if (action.includes('search')) {
-                loadingText = 'Mencari...';
+                loadingText = 'loadinggg......';
                 duration = 400;
             } else if (method.toLowerCase() === 'post') {
-                loadingText = 'Menyimpan data...';
+                loadingText = 'loadinggg......';
                 duration = 600;
             } else if (method.toLowerCase() === 'put' || method.toLowerCase() === 'patch') {
-                loadingText = 'Memperbarui data...';
+                loadingText = 'loadinggg......';
                 duration = 600;
             } else if (method.toLowerCase() === 'delete') {
-                loadingText = 'Menghapus data...';
+                loadingText = 'loadinggg......';
                 duration = 500;
             }
             
@@ -342,16 +342,16 @@ class BloggerAnimations {
     // Show loading for specific actions
     showLoadingForAction(action, callback) {
         const loadingMessages = {
-            'form-submit': 'Mengirim data...',
-            'ajax-request': 'Memuat data...',
-            'file-upload': 'Mengunggah file...',
-            'search': 'Mencari...',
-            'login': 'Masuk ke sistem...',
-            'logout': 'Keluar dari sistem...',
-            'save': 'Menyimpan...',
-            'delete': 'Menghapus...',
-            'update': 'Memperbarui...',
-            'default': 'Memproses...'
+            'form-submit': 'loadinggg......',
+            'ajax-request': 'loadinggg......',
+            'file-upload': 'loadinggg......',
+            'search': 'loadinggg......',
+            'login': 'loadinggg......',
+            'logout': 'loadinggg......',
+            'save': 'loadinggg......',
+            'delete': 'loadinggg......',
+            'update': 'loadinggg......',
+            'default': 'loadinggg......'
         };
 
         const message = loadingMessages[action] || loadingMessages['default'];
@@ -380,16 +380,16 @@ class BloggerAnimations {
         document.querySelectorAll('form').forEach(form => {
             form.addEventListener('submit', (e) => {
                 const action = form.getAttribute('action') || '';
-                let loadingText = 'Mengirim data...';
+                let loadingText = 'loadinggg......';
 
                 if (action.includes('login')) {
-                    loadingText = 'Masuk ke sistem...';
+                    loadingText = 'loadinggg......';
                 } else if (action.includes('register')) {
-                    loadingText = 'Mendaftarkan akun...';
+                    loadingText = 'loadinggg......';
                 } else if (action.includes('comment')) {
-                    loadingText = 'Mengirim komentar...';
+                    loadingText = 'loadinggg......';
                 } else if (action.includes('search')) {
-                    loadingText = 'Mencari...';
+                    loadingText = 'loadinggg......';
                 }
 
                 this.showLoading(loadingText);
@@ -409,7 +409,7 @@ class BloggerAnimations {
         const self = this;
 
         window.fetch = function(...args) {
-            self.showLoading('Memuat data...');
+            self.showLoading('loadinggg......');
             
             return originalFetch.apply(this, args)
                 .then(response => {
@@ -436,7 +436,7 @@ class BloggerAnimations {
             const xhr = this;
             
             xhr.addEventListener('loadstart', () => {
-                self.showLoading('Memuat data...');
+                self.showLoading('loadinggg......');
             });
 
             xhr.addEventListener('loadend', () => {

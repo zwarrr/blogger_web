@@ -45,8 +45,17 @@
       </div>
 
       <!-- Title -->
-      <h1 class="text-2xl font-semibold text-gray-900 mb-2">Admin Login</h1>
-      <p class="text-gray-500 mb-6">Sign in to access admin dashboard</p>
+      <h1 class="text-2xl font-semibold text-gray-900 mb-2">Login</h1>
+      <p class="text-gray-500 mb-6">Masuk ke dashboard Blogger</p>
+
+      <!-- Display Errors -->
+      @if ($errors->any())
+          <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              @foreach ($errors->all() as $error)
+                  <p class="text-sm text-red-600">{{ $error }}</p>
+              @endforeach
+          </div>
+      @endif
 
       <!-- Form -->
       <form class="space-y-5" method="POST" action="{{ route('auth.login.post') }}">
@@ -90,10 +99,6 @@
           Login
         </button>
       </form>
-      <div class="text-sm text-gray-600 mt-4">
-        Belum punya akun author? 
-        <a href="{{ route('auth.register') }}" class="text-orange-600 hover:underline">Daftar di sini</a>
-      </div>
       
     </div>
 

@@ -168,7 +168,7 @@
       initialLoading.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:linear-gradient(135deg,#1a1a1a,#2d2d2d,#1a1a1a);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
       initialLoading.innerHTML = `
         <div style="width:80px;height:80px;border:4px solid #333;border-top:4px solid #FF5722;border-radius:50%;animation:spin 1s linear infinite"></div>
-        <p style="color:#FFCCBC;font-size:18px;font-weight:600;margin-top:20px">Memuat artikel...</p>
+        <p style="color:#FFCCBC;font-size:18px;font-weight:600;margin-top:20px">loadinggg......</p>
         <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
       `;
       document.body.appendChild(initialLoading);
@@ -208,7 +208,7 @@
         stroke-linecap="round"
       />
     </svg>
-    <p class="loading-text">Memuat...</p>
+    <p class="loading-text">loadinggg......</p>
   </div>
   <header class="bg-white/90 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-50 shadow-sm">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">

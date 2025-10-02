@@ -54,7 +54,8 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             // Use custom error logging service
             if (ErrorLogService::shouldReport($e)) {
-                ErrorLogService::logError($e, request());
+                $request = app()->runningInConsole() ? null : request();
+                ErrorLogService::logError($e, $request);
             }
         });
     }

@@ -8,6 +8,7 @@
   <title>Berita | Blogger</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"rel="stylesheet" />
+  @vite(['resources/css/app.css'])
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -274,25 +275,9 @@
       transform: translateY(0);
     }
 
-    /* Navigation smooth transition */
+    /* Navigation smooth transition - hover removed */
     .nav-link {
       position: relative;
-      transition: color 0.3s ease;
-    }
-
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: #EA580C;
-      transition: width 0.3s ease;
-    }
-
-    .nav-link:hover::after {
-      width: 100%;
     }
 
     /* Loading spinner improvements */
@@ -461,7 +446,7 @@
         <svg style="width:96px;height:96px;color:#FF5722;animation:spin 1s linear infinite" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="31.416" stroke-dashoffset="31.416" style="animation:dash 2s ease-in-out infinite"/>
         </svg>
-        <p style="color:#FFCCBC;font-size:18px;font-weight:600;margin-top:20px;animation:pulse 1.5s ease-in-out infinite">Memuat halaman...</p>
+        <p style="color:#FFCCBC;font-size:18px;font-weight:600;margin-top:20px;animation:pulse 1.5s ease-in-out infinite">loadinggg......</p>
         <style>
           @keyframes spin { to { transform: rotate(360deg); } }
           @keyframes dash { 0% { stroke-dashoffset: 31.416; } 50% { stroke-dashoffset: 15.708; } 100% { stroke-dashoffset: 0; } }
@@ -499,35 +484,27 @@
   </script>
 
   <!-- Page Transition Overlay (Hidden by default) -->
-  <div class="page-transition" id="pageTransition" style="opacity: 0; visibility: hidden; pointer-events: none;">
-    <svg class="w-24 h-24 text-[#FF5722]" viewBox="0 0 50 50">
-      <circle
-        class="spinner-circle"
-        cx="25"
-        cy="25"
-        r="20"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="4"
-        stroke-linecap="round"
-      />
-    </svg>
-    <p class="loading-text">Memuat...</p>
+  <div class="page-transition" id="pageTransition">
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">loadinggg......</p>
+    </div>
   </div>
 
   <!-- Partikel Layer -->
   <div id="particles-js"></div>
 
-  <!-- Top Bar -->
-  <header class="bg-white/90 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-50 shadow-sm">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="{{ route('user.views') }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity nav-link page-link">
-        <span
-          class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white font-bold shadow-md">B</span>
-        <span class="text-lg font-bold text-gray-900">Blogger</span>
-      </a>
-    </div>
-  </header>
+<!-- Top Bar -->
+<header class="bg-white/90 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="{{ route('user.views') }}" class="flex items-center gap-2 page-link no-underline">
+      <span
+        class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white font-bold shadow-md">B</span>
+      <span class="text-lg font-bold text-gray-900">Blogger</span>
+    </a>
+  </div>
+</header>
+
 
   <!-- Hero / Search -->
   <section

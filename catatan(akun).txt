@@ -3,3 +3,8 @@ pass  : admin987
 
 author(user) : berita@gmail.com
 pass         : berita123
+
+jangan lupa : php artisan db:seed, npm run build, dan npm run dev
+
+akses url login:  http://127.0.0.1:8000/auth/login
+views : http://127.0.0.1:8000

@@ -128,13 +128,7 @@
         stroke-linecap="round"
       />
     </svg>
-    <p class="loading-text">Memuat...</p>
-  </div>
-        stroke-width="4"
-        stroke-linecap="round"
-      />
-    </svg>
-    <p class="loading-text">Memuat...</p>
+    <p class="loading-text">loadinggg......</p>
   </div>
 
   <div class="ml-64 flex-1 flex flex-col min-h-screen">

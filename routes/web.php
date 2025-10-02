@@ -23,7 +23,12 @@ Route::get('/test-animation', function () {
 // Test loading route
 Route::get('/test-loading', function () {
     return view('test-loading');
-})->name('test.loading');
+});
+
+// Test CSRF route for debugging
+Route::get('/test-csrf', function () {
+    return view('test-csrf');
+});
 
 // Public blog routes (user can only view list and detail)
 // Keep /posts for backward compatibility but redirect to root so URL stays clean
@@ -34,13 +39,13 @@ Route::post('/posts/{id}/comments', [CommentController::class, 'store'])->name('
 Route::post('/posts/{id}/comments/{commentId}/reply', [CommentController::class, 'reply'])->name('comments.reply');
 Route::post('/posts/{id}/comments/{commentId}/like', [CommentController::class, 'like'])->name('comments.like');
 
-// Admin login uses the shared auth/login view
-Route::get('/login', [AdminAuthController::class, 'showLoginForm'])
-    ->middleware('guest:admin')
-    ->name('login');
-Route::post('/login', [AdminAuthController::class, 'login'])
-    ->middleware('guest:admin')
-    ->name('login.post');
+// Redirect old login URL to correct /auth/login URL
+Route::get('/login', function() {
+    abort(404, 'Halaman tidak ditemukan. Gunakan URL: ' . url('/auth/login'));
+})->name('login');
+Route::post('/login', function() {
+    abort(404, 'Halaman tidak ditemukan. Gunakan URL: ' . url('/auth/login'));
+})->name('login.post');
 
 // Admin area (protected by admin guard)
 Route::prefix('admin')->group(function () {
@@ -69,24 +74,24 @@ Route::prefix('admin')->middleware('auth:admin')->group(function () {
 
 // No user login/registration; users only view public pages
 
-// Author authentication (uses default web guard with role check)
+// Author authentication - redirect to /auth/* URLs
 Route::prefix('author')->group(function () {
-    // Login & Register pages for authors (reuse auth views)
-    Route::get('/login', [AuthorAuthController::class, 'showLoginForm'])->name('author.login');
-    Route::post('/login', [AuthorAuthController::class, 'login'])->name('author.login.post');
-    Route::get('/register', [AuthorAuthController::class, 'showRegisterForm'])->name('author.register');
-    Route::post('/register', [AuthorAuthController::class, 'register'])->name('author.register.post');
+    // Redirect to correct URLs
+    Route::get('/login', function() {
+        abort(404, 'Halaman tidak ditemukan. Gunakan URL: ' . url('/auth/login'));
+    })->name('author.login');
+    Route::post('/login', function() {
+        abort(404, 'Halaman tidak ditemukan. Gunakan URL: ' . url('/auth/login'));
+    })->name('author.login.post');
 
     // Logout (must be authenticated via web)
     Route::post('/logout', [AuthorAuthController::class, 'logout'])->name('author.logout');
 });
 
-// Preferred clean URLs for author auth under /auth/*
+// Clean URLs for auth under /auth/* (login only)
 Route::prefix('auth')->group(function () {
     Route::get('/login', [AuthorAuthController::class, 'showLoginForm'])->name('auth.login');
     Route::post('/login', [AuthorAuthController::class, 'login'])->name('auth.login.post');
-    Route::get('/register', [AuthorAuthController::class, 'showRegisterForm'])->name('auth.register');
-    Route::post('/register', [AuthorAuthController::class, 'register'])->name('auth.register.post');
     Route::post('/logout', [AuthorAuthController::class, 'logout'])->name('auth.logout');
 });
 
