@@ -17,6 +17,6 @@ class Authenticate extends Middleware
         }
 
         // Unified login url under /auth/login
-        return route('login');
+        return route('auth.login');
     }
 }

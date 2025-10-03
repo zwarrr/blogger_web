@@ -57,7 +57,7 @@
     <h1 id="glitch-text" class="text-[140px] md:text-[180px] font-extrabold glow mb-4">401</h1>
     <p id="glitch-para" class="text-2xl md:text-3xl font-light mb-8 text-gray-700">Unauthorized! Kamu perlu login terlebih dahulu untuk mengakses halaman ini.</p>
     <div class="space-x-4">
-      <a href="/login" class="inline-block bg-pink-600 hover:bg-pink-700 text-white font-semibold px-8 py-3 rounded-full shadow-xl transition-all duration-300 transform hover:scale-105">
+      <a href="/auth/login" class="inline-block bg-pink-600 hover:bg-pink-700 text-white font-semibold px-8 py-3 rounded-full shadow-xl transition-all duration-300 transform hover:scale-105">
         Login
       </a>
       <a href="/" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-full shadow-xl transition-all duration-300 transform hover:scale-105">

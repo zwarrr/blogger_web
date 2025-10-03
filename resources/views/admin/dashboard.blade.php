@@ -80,6 +80,39 @@
       0%, 100% { opacity: 0.7; }
       50% { opacity: 1; }
     }
+    
+    /* Trading chart styles */
+    .chart-point {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .chart-point:hover {
+      filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.8));
+    }
+    
+    /* Chart grid animation */
+    @keyframes gridPulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.6; }
+    }
+    
+    /* Trading line animation */
+    @keyframes drawLine {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+    
+    .trading-line {
+      filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.4));
+    }
+    
+    /* Pulse animation for data points */
+    @keyframes pointPulse {
+      0%, 100% { r: 5; }
+      50% { r: 6; }
+    }
   </style>
 </head>
 <body class="bg-[#F5F7FB] text-gray-800">
@@ -195,28 +228,139 @@
               <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <i data-feather="bar-chart-2" class="w-5 h-5 text-orange-500"></i>
                 Posts Created
+                @if(!empty($postsByDay))
+                  @php
+                    $total = collect($postsByDay)->sum('count');
+                    $recent = collect($postsByDay)->slice(-2)->sum('count');
+                    $previous = collect($postsByDay)->slice(-4, 2)->sum('count');
+                    $trend = $previous > 0 ? (($recent - $previous) / $previous) * 100 : ($recent > 0 ? 100 : 0);
+                  @endphp
+                  <span class="ml-2 px-2 py-1 bg-orange-100 text-orange-700 text-sm rounded-full font-medium">
+                    {{ $total }} total
+                  </span>
+                  @if($trend > 0)
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                      <i data-feather="trending-up" class="w-3 h-3"></i>
+                      +{{ number_format($trend, 1) }}%
+                    </span>
+                  @elseif($trend < 0)
+                    <span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center gap-1">
+                      <i data-feather="trending-down" class="w-3 h-3"></i>
+                      {{ number_format($trend, 1) }}%
+                    </span>
+                  @else
+                    <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1">
+                      <i data-feather="minus" class="w-3 h-3"></i>
+                      0%
+                    </span>
+                  @endif
+                @endif
               </h3>
-              <div class="text-sm text-gray-500">Last 7 days</div>
+              <div class="text-sm text-gray-500 flex items-center gap-2">
+                Last 7 days
+                <span class="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
+                <span class="text-xs">Live</span>
+              </div>
             </div>
-            <!-- Simple bar chart using CSS -->
-            <div class="flex items-end gap-3 h-40">
-              @php $maxCount = $maxCount ?? 1; @endphp
-              @if(!empty($postsByDay))
-                @foreach($postsByDay as $d)
-                  @php $h = $maxCount > 0 ? max(4, intval(($d['count'] / $maxCount) * 100)) : 4; @endphp
-                  <div class="w-full flex flex-col items-center justify-end">
-                    <div class="w-full bg-orange-400 rounded-t-md" style="height: {{ $h }}%"></div>
-                    <div class="text-xs mt-1 text-gray-600">{{ $d['label'] }}</div>
-                  </div>
-                @endforeach
-              @else
-                @for($i=0;$i<7;$i++)
-                  <div class="w-full flex flex-col items-center justify-end">
-                    <div class="w-full bg-orange-200 rounded-t-md" style="height: 5%"></div>
-                    <div class="text-xs mt-1 text-gray-400">&nbsp;</div>
-                  </div>
+            <!-- Trading-style line chart -->
+            <div class="relative h-48 bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <!-- Grid lines -->
+              <div class="absolute inset-4 grid grid-rows-4 grid-cols-6 gap-0">
+                @for($i = 0; $i < 4; $i++)
+                  <div class="col-span-6 border-t border-gray-200 opacity-50"></div>
                 @endfor
-              @endif
+              </div>
+              
+              <!-- Chart container -->
+              <svg class="w-full h-full" viewBox="0 0 420 180" preserveAspectRatio="none">
+                @php 
+                  $maxCount = $maxCount ?? 1;
+                  $points = [];
+                  $chartData = [];
+                @endphp
+                
+                @if(!empty($postsByDay) && is_countable($postsByDay))
+                  @foreach($postsByDay as $index => $d)
+                    @php
+                      $count = $d['count'] ?? 0;
+                      $x = ($index * 60) + 30; // 60px spacing
+                      $y = 160 - (($count / max($maxCount, 1)) * 140); // Invert Y for SVG
+                      $points[] = $x . ',' . $y;
+                      $chartData[] = ['x' => $x, 'y' => $y, 'count' => $count, 'label' => $d['label'] ?? ''];
+                    @endphp
+                  @endforeach
+                  
+                  <!-- Area fill gradient -->
+                  <defs>
+                    <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style="stop-color:#f97316;stop-opacity:0.3" />
+                      <stop offset="100%" style="stop-color:#f97316;stop-opacity:0.05" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <!-- Area fill -->
+                  <path d="M30,160 {{ implode(' ', array_map(fn($p) => 'L'.$p, $points)) }} L390,160 Z" 
+                        fill="url(#areaGradient)" opacity="0.8"/>
+                  
+                  <!-- Main line with animation -->
+                  <polyline points="{{ implode(' ', $points) }}" 
+                           fill="none" 
+                           stroke="#f97316" 
+                           stroke-width="3" 
+                           stroke-linecap="round" 
+                           stroke-linejoin="round"
+                           class="trading-line"
+                           style="stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawLine 2s ease-out forwards;"/>
+                  
+                  <!-- Data points -->
+                  @foreach($chartData as $point)
+                    <circle cx="{{ $point['x'] }}" 
+                            cy="{{ $point['y'] }}" 
+                            r="5" 
+                            fill="#f97316" 
+                            stroke="white" 
+                            stroke-width="2" 
+                            class="hover:r-6 transition-all cursor-pointer chart-point" 
+                            data-count="{{ $point['count'] }}" 
+                            data-label="{{ $point['label'] }}"/>
+                  @endforeach
+                @else
+                  <!-- No data line -->
+                  <line x1="30" y1="160" x2="390" y2="160" stroke="#d1d5db" stroke-width="2" stroke-dasharray="5,5"/>
+                  <text x="210" y="90" text-anchor="middle" fill="#9ca3af" font-size="14">No data available</text>
+                @endif
+              </svg>
+              
+              <!-- Y-axis labels -->
+              <div class="absolute left-0 top-4 bottom-4 flex flex-col justify-between text-xs text-gray-500">
+                <span>{{ $maxCount }}</span>
+                <span>{{ intval($maxCount * 0.75) }}</span>
+                <span>{{ intval($maxCount * 0.5) }}</span>
+                <span>{{ intval($maxCount * 0.25) }}</span>
+                <span>0</span>
+              </div>
+              
+              <!-- X-axis labels -->
+              <div class="absolute bottom-0 left-8 right-8 flex justify-between text-xs text-gray-600">
+                @if(!empty($postsByDay) && is_countable($postsByDay))
+                  @foreach($postsByDay as $d)
+                    <span>{{ $d['label'] ?? '' }}</span>
+                  @endforeach
+                @else
+                  @for($i=0;$i<7;$i++)
+                    @php $dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now()->subDays(6-$i)->dayOfWeek]; @endphp
+                    <span>{{ $dayName }}</span>
+                  @endfor
+                @endif
+              </div>
+              
+              <!-- Floating tooltip -->
+              <div id="chart-tooltip" class="absolute bg-gray-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 pointer-events-none transition-opacity z-20 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 bg-orange-400 rounded-full"></div>
+                  <span id="tooltip-content">0 posts</span>
+                </div>
+              </div>
             </div>
           </div>
           <div class="bg-white rounded-lg border border-gray-200 p-5">
@@ -302,6 +446,68 @@
         if (window.feather) {
           window.feather.replace({ 'stroke-width': 2 });
         }
+        
+        // Trading chart interactions
+        document.addEventListener('DOMContentLoaded', function() {
+          const tooltip = document.getElementById('chart-tooltip');
+          const tooltipContent = document.getElementById('tooltip-content');
+          
+          // Chart point hover effects
+          document.querySelectorAll('.chart-point').forEach(point => {
+            point.addEventListener('mouseenter', function(e) {
+              const count = this.getAttribute('data-count');
+              const label = this.getAttribute('data-label');
+              
+              if (tooltip && tooltipContent) {
+                tooltipContent.textContent = `${label}: ${count} post${count != 1 ? 's' : ''}`;
+                tooltip.classList.remove('opacity-0');
+                tooltip.classList.add('opacity-100');
+              }
+              
+              // Highlight point
+              this.setAttribute('r', '7');
+              this.style.filter = 'drop-shadow(0 0 6px rgba(249, 115, 22, 0.6))';
+            });
+            
+            point.addEventListener('mouseleave', function() {
+              if (tooltip) {
+                tooltip.classList.remove('opacity-100');
+                tooltip.classList.add('opacity-0');
+              }
+              
+              // Reset point
+              this.setAttribute('r', '5');
+              this.style.filter = 'none';
+            });
+            
+            point.addEventListener('mousemove', function(e) {
+              if (tooltip) {
+                const rect = this.closest('.relative').getBoundingClientRect();
+                tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+              }
+            });
+            
+            // Click to copy data
+            point.addEventListener('click', function() {
+              const count = this.getAttribute('data-count');
+              const label = this.getAttribute('data-label');
+              const text = `${label}: ${count} posts`;
+              
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                  if (tooltipContent) {
+                    const originalText = tooltipContent.textContent;
+                    tooltipContent.textContent = 'Copied!';
+                    setTimeout(() => {
+                      tooltipContent.textContent = originalText;
+                    }, 1000);
+                  }
+                });
+              }
+            });
+          });
+        });
       </script>
       
     </div>
