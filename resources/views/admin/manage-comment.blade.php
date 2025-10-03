@@ -348,11 +348,12 @@
     })();
   </script>
   
-  <!-- CRUD Loading Setup -->
+  <!-- Enhanced CRUD Loading Setup -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Function to show loading
-      function showLoading(message = 'loadinggg......') {
+      let loadingTimeout;
+      
+      function showLoading(message = 'Processing...', duration = null) {
         const pageTransition = document.getElementById('pageTransition');
         if (pageTransition) {
           pageTransition.style.display = 'flex';
@@ -365,26 +366,57 @@
           if (loadingText) {
             loadingText.textContent = message;
           }
+          
+          if (duration) {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = setTimeout(() => {
+              hideLoading();
+            }, duration);
+          }
         }
       }
       
-      // Add loading to all forms
+      function hideLoading() {
+        const pageTransition = document.getElementById('pageTransition');
+        if (pageTransition) {
+          pageTransition.style.opacity = '0';
+          pageTransition.style.visibility = 'hidden';
+          pageTransition.style.pointerEvents = 'none';
+          pageTransition.classList.remove('active');
+          setTimeout(() => {
+            pageTransition.style.display = 'none';
+          }, 300);
+        }
+        clearTimeout(loadingTimeout);
+      }
+      
+      window.showLoading = showLoading;
+      window.hideLoading = hideLoading;
+      
+      // Only actual form submissions
       document.querySelectorAll('form').forEach(form => {
         form.addEventListener('submit', function(e) {
-          showLoading('loadinggg......');
+          const isDelete = form.querySelector('input[name="_method"][value="DELETE"]');
+          if (isDelete) {
+            showLoading('Deleting comment...', 3000);
+          } else {
+            showLoading('Updating comment...', 5000);
+          }
         });
       });
       
-      // Add loading to action buttons
-      document.querySelectorAll('button[type="submit"], [data-action]').forEach(button => {
-        button.addEventListener('click', function() {
-          showLoading('loadinggg......');
+      // Navigation links
+      document.querySelectorAll('a[href*="/admin/"], a[href*="/author/"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+          if (!this.href.includes('#') && !this.target) {
+            showLoading('Loading page...', 2000);
+          }
         });
       });
     });
   </script>
   
-  <!-- Anti-Stuck Loading Protection -->
+  <!-- Enhanced Anti-Stuck Loading Protection -->
   <script>
     window.loadingDebug = true;
     window.forceHideLoading = function() {
@@ -395,19 +427,48 @@
           el.style.visibility = 'hidden';
           el.style.pointerEvents = 'none';
           el.classList.remove('active');
+          setTimeout(() => {
+            el.style.display = 'none';
+          }, 300);
         }
       });
+      if (window.loadingTimeout) clearTimeout(window.loadingTimeout);
     };
     
-    // Auto force-hide any stuck loading after page load
     window.addEventListener('load', () => {
-      setTimeout(window.forceHideLoading, 1000);
+      setTimeout(() => {
+        if (window.hideLoading) {
+          window.hideLoading();
+        } else {
+          window.forceHideLoading();
+        }
+      }, 500);
     });
     
-    // Escape key protection
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') window.forceHideLoading();
+      if (e.key === 'Escape') {
+        if (window.hideLoading) {
+          window.hideLoading();
+        } else {
+          window.forceHideLoading();
+        }
+      }
     });
+    
+    let clickCount = 0;
+    document.addEventListener('click', () => {
+      clickCount++;
+      if (clickCount > 3) {
+        const transition = document.getElementById('pageTransition');
+        if (transition && transition.style.opacity === '1') {
+          if (window.hideLoading) window.hideLoading();
+          else window.forceHideLoading();
+        }
+        clickCount = 0;
+      }
+    });
+    
+    setInterval(() => { clickCount = 0; }, 2000);
   </script>
   
   @vite(['resources/js/animations.js'])

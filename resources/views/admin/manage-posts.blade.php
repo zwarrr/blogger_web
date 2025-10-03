@@ -608,8 +608,10 @@
                           });
                           
                           function setupCRUDLoading() {
-                            // Function to show loading
-                            function showLoading(message = 'loadinggg......') {
+                            let loadingTimeout;
+                            
+                            // Enhanced loading functions
+                            function showLoading(message = 'Processing...', duration = null) {
                               const pageTransition = document.getElementById('pageTransition');
                               if (pageTransition) {
                                 pageTransition.style.display = 'flex';
@@ -622,49 +624,70 @@
                                 if (loadingText) {
                                   loadingText.textContent = message;
                                 }
+                                
+                                if (duration) {
+                                  clearTimeout(loadingTimeout);
+                                  loadingTimeout = setTimeout(() => {
+                                    hideLoading();
+                                  }, duration);
+                                }
                               }
                             }
                             
-                            // Add loading to all forms
+                            function hideLoading() {
+                              const pageTransition = document.getElementById('pageTransition');
+                              if (pageTransition) {
+                                pageTransition.style.opacity = '0';
+                                pageTransition.style.visibility = 'hidden';
+                                pageTransition.style.pointerEvents = 'none';
+                                pageTransition.classList.remove('active');
+                                setTimeout(() => {
+                                  pageTransition.style.display = 'none';
+                                }, 300);
+                              }
+                              clearTimeout(loadingTimeout);
+                            }
+                            
+                            // Make functions globally accessible
+                            window.showLoading = showLoading;
+                            window.hideLoading = hideLoading;
+                            
+                            // Only actual form submissions with appropriate messages
                             document.querySelectorAll('form').forEach(form => {
                               form.addEventListener('submit', function(e) {
                                 const action = form.getAttribute('action') || '';
-                                let loadingMessage = 'loadinggg......';
+                                let loadingMessage = 'Processing...';
+                                let duration = 5000;
                                 
                                 if (action.includes('store')) {
-                                  loadingMessage = 'loadinggg......';
+                                  loadingMessage = 'Creating post...';
                                 } else if (action.includes('update')) {
-                                  loadingMessage = 'loadinggg......';
+                                  loadingMessage = 'Updating post...';
                                 } else if (action.includes('destroy')) {
-                                  loadingMessage = 'loadinggg......';
+                                  loadingMessage = 'Deleting post...';
+                                  duration = 3000;
                                 }
                                 
-                                showLoading(loadingMessage);
+                                showLoading(loadingMessage, duration);
                               });
                             });
                             
-                            // Add loading to delete buttons
-                            document.querySelectorAll('button[type="submit"]').forEach(button => {
+                            // Navigation links
+                            document.querySelectorAll('a[href*="/admin/"], a[href*="/author/"]').forEach(link => {
+                              link.addEventListener('click', function(e) {
+                                if (!this.href.includes('#') && !this.target) {
+                                  showLoading('Loading page...', 2000);
+                                }
+                              });
+                            });
+                            
+                            // Modal controls - NO loading for these
+                            document.querySelectorAll('[data-action="edit"]').forEach(button => {
                               button.addEventListener('click', function(e) {
-                                const form = button.closest('form');
-                                if (form) {
-                                  const action = form.getAttribute('action') || '';
-                                  if (action.includes('destroy')) {
-                                    showLoading('loadinggg......');
-                                  }
-                                }
-                              });
-                            });
-                            
-                            // Add loading to modal buttons
-                            document.querySelectorAll('[data-action]').forEach(button => {
-                              button.addEventListener('click', function() {
-                                if (button.dataset.action === 'edit') {
-                                  showLoading('loadinggg......');
-                                  setTimeout(() => {
-                                    if (window.forceHideLoading) window.forceHideLoading();
-                                  }, 1000);
-                                }
+                                e.preventDefault();
+                                // Just open modal, no loading needed
+                                const postData = JSON.parse(this.getAttribute('data-post'));
+                                // Modal opening logic here without loading
                               });
                             });
                           }
@@ -673,7 +696,7 @@
                 </div>
             </div>
             
-            <!-- Anti-Stuck Loading Protection -->
+            <!-- Enhanced Anti-Stuck Loading Protection -->
             <script>
               window.loadingDebug = true;
               window.forceHideLoading = function() {
@@ -684,22 +707,51 @@
                     el.style.visibility = 'hidden';
                     el.style.pointerEvents = 'none';
                     el.classList.remove('active');
+                    setTimeout(() => {
+                      el.style.display = 'none';
+                    }, 300);
                   }
                 });
+                if (window.loadingTimeout) clearTimeout(window.loadingTimeout);
               };
               
-              // Auto force-hide any stuck loading after page load
               window.addEventListener('load', () => {
-                setTimeout(window.forceHideLoading, 1000);
+                setTimeout(() => {
+                  if (window.hideLoading) {
+                    window.hideLoading();
+                  } else {
+                    window.forceHideLoading();
+                  }
+                }, 500);
               });
               
-              // Escape key protection
               document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') window.forceHideLoading();
+                if (e.key === 'Escape') {
+                  if (window.hideLoading) {
+                    window.hideLoading();
+                  } else {
+                    window.forceHideLoading();
+                  }
+                }
               });
+              
+              let clickCount = 0;
+              document.addEventListener('click', () => {
+                clickCount++;
+                if (clickCount > 3) {
+                  const transition = document.getElementById('pageTransition');
+                  if (transition && transition.style.opacity === '1') {
+                    if (window.hideLoading) window.hideLoading();
+                    else window.forceHideLoading();
+                  }
+                  clickCount = 0;
+                }
+              });
+              
+              setInterval(() => { clickCount = 0; }, 2000);
             </script>
             
-            @vite(['resources/js/animations.js'])
+            @vite(['resources/js/animations-fixed.js', 'resources/js/loading-fix.js'])
         </body>
 
         </html>

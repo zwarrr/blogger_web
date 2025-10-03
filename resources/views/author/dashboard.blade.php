@@ -127,20 +127,7 @@
     $recentComments = $recentComments ?? collect([]);
   @endphp
   
-  <script>
-    // Clean initial loading
-    document.addEventListener('DOMContentLoaded', function() {
-      const initialLoading = document.getElementById('initialLoading');
-      if (initialLoading) {
-        setTimeout(() => {
-          initialLoading.classList.remove('active');
-          setTimeout(() => {
-            initialLoading.style.display = 'none';
-          }, 300);
-        }, 800);
-      }
-    });
-  </script>
+
   <style>
     .bar { transition: height .2s ease; }
   </style>
@@ -523,69 +510,17 @@
     </div>
   </div>
 
-  <!-- CRUD Loading Setup -->
+  <!-- Feather Icons Setup -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Function to show loading
-      function showLoading(message = 'loadinggg......') {
-        const pageTransition = document.getElementById('pageTransition');
-        if (pageTransition) {
-          pageTransition.style.display = 'flex';
-          pageTransition.style.opacity = '1';
-          pageTransition.style.visibility = 'visible';
-          pageTransition.style.pointerEvents = 'all';
-          pageTransition.classList.add('active');
-          
-          const loadingText = pageTransition.querySelector('.loading-text');
-          if (loadingText) {
-            loadingText.textContent = message;
-          }
-        }
+      if (window.feather) {
+        window.feather.replace({ 'stroke-width': 2 });
       }
-      
-      // Add loading to all forms
-      document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-          showLoading('loadinggg......');
-        });
-      });
-      
-      // Add loading to action buttons
-      document.querySelectorAll('button[type="submit"], [data-action], .btn-create, .btn-edit, .btn-delete').forEach(button => {
-        button.addEventListener('click', function() {
-          showLoading('loadinggg......');
-        });
-      });
     });
   </script>
+
   
-  <!-- Anti-Stuck Loading Protection -->
-  <script>
-    window.loadingDebug = true;
-    window.forceHideLoading = function() {
-      const loadings = document.querySelectorAll('[id*="Loading"], [id*="Transition"], .page-transition');
-      loadings.forEach(el => {
-        if (el) {
-          el.style.opacity = '0';
-          el.style.visibility = 'hidden';
-          el.style.pointerEvents = 'none';
-          el.classList.remove('active');
-        }
-      });
-    };
-    
-    // Auto force-hide any stuck loading after page load
-    window.addEventListener('load', () => {
-      setTimeout(window.forceHideLoading, 1000);
-    });
-    
-    // Escape key protection
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') window.forceHideLoading();
-    });
-  </script>
-  
-  @vite(['resources/js/animations.js'])
+  @vite(['resources/js/animations-fixed.js', 'resources/js/loading-fix.js'])
 
 </body>
 </html>

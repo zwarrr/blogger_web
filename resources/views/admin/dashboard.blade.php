@@ -513,11 +513,13 @@
     </div>
   </div>
 
-  <!-- CRUD Loading Setup -->
+  <!-- Enhanced CRUD Loading Setup -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Function to show loading
-      function showLoading(message = 'loadinggg......') {
+      let loadingTimeout;
+      
+      // Function to show loading with better control
+      function showLoading(message = 'Processing...', duration = null) {
         const pageTransition = document.getElementById('pageTransition');
         if (pageTransition) {
           pageTransition.style.display = 'flex';
@@ -530,27 +532,67 @@
           if (loadingText) {
             loadingText.textContent = message;
           }
+          
+          // Auto-hide loading after specified duration
+          if (duration) {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = setTimeout(() => {
+              hideLoading();
+            }, duration);
+          }
         }
       }
       
-      // Add loading to all forms
+      // Function to hide loading
+      function hideLoading() {
+        const pageTransition = document.getElementById('pageTransition');
+        if (pageTransition) {
+          pageTransition.style.opacity = '0';
+          pageTransition.style.visibility = 'hidden';
+          pageTransition.style.pointerEvents = 'none';
+          pageTransition.classList.remove('active');
+          setTimeout(() => {
+            pageTransition.style.display = 'none';
+          }, 300);
+        }
+        clearTimeout(loadingTimeout);
+      }
+      
+      // Make functions globally accessible
+      window.showLoading = showLoading;
+      window.hideLoading = hideLoading;
+      
+      // Add loading only to actual form submissions (server requests)
       document.querySelectorAll('form').forEach(form => {
         form.addEventListener('submit', function(e) {
-          showLoading('loadinggg......');
+          showLoading('Processing request...', 5000);
         });
       });
       
-      // Add loading to action buttons and navigation links
-      document.querySelectorAll('button[type="submit"], [data-action], .btn-create, .btn-edit, .btn-delete, a[href*="admin"]').forEach(button => {
-        button.addEventListener('click', function() {
-          showLoading('loadinggg......');
+      // Add loading to delete actions only
+      document.querySelectorAll('form[method="POST"] button[type="submit"]').forEach(button => {
+        button.addEventListener('click', function(e) {
+          const form = this.closest('form');
+          if (form && form.querySelector('input[name="_method"][value="DELETE"]')) {
+            showLoading('Deleting...', 3000);
+          }
+        });
+      });
+      
+      // Navigation links should show loading
+      document.querySelectorAll('a[href*="/admin/"], a[href*="/author/"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+          if (!this.href.includes('#') && !this.target) {
+            showLoading('Loading page...', 2000);
+          }
         });
       });
     });
   </script>
   
-  <!-- Anti-Stuck Loading Protection -->
+  <!-- Enhanced Anti-Stuck Loading Protection -->
   <script>
+    // Enhanced loading protection system
     window.loadingDebug = true;
     window.forceHideLoading = function() {
       const loadings = document.querySelectorAll('[id*="Loading"], [id*="Transition"], .page-transition');
@@ -560,22 +602,64 @@
           el.style.visibility = 'hidden';
           el.style.pointerEvents = 'none';
           el.classList.remove('active');
+          setTimeout(() => {
+            el.style.display = 'none';
+          }, 300);
         }
       });
+      
+      // Clear any pending timeouts
+      if (window.loadingTimeout) {
+        clearTimeout(window.loadingTimeout);
+      }
     };
     
-    // Auto force-hide any stuck loading after page load
+    // Auto-hide loading on page fully loaded
     window.addEventListener('load', () => {
-      setTimeout(window.forceHideLoading, 1000);
+      setTimeout(() => {
+        if (window.hideLoading) {
+          window.hideLoading();
+        } else {
+          window.forceHideLoading();
+        }
+      }, 500);
     });
     
-    // Escape key protection
+    // Multiple escape mechanisms
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') window.forceHideLoading();
+      if (e.key === 'Escape') {
+        if (window.hideLoading) {
+          window.hideLoading();
+        } else {
+          window.forceHideLoading();
+        }
+      }
     });
+    
+    // Click anywhere to hide stuck loading (emergency)
+    let clickCount = 0;
+    document.addEventListener('click', (e) => {
+      clickCount++;
+      if (clickCount > 3) {
+        const transition = document.getElementById('pageTransition');
+        if (transition && transition.style.opacity === '1') {
+          if (window.hideLoading) {
+            window.hideLoading();
+          } else {
+            window.forceHideLoading();
+          }
+        }
+        clickCount = 0;
+      }
+    });
+    
+    // Reset click count after 2 seconds
+    setInterval(() => {
+      clickCount = 0;
+    }, 2000);
   </script>
   
-  @vite(['resources/js/animations.js'])
+  @vite(['resources/js/animations-fixed.js', 'resources/js/loading-fix.js'])
 
 </body>
 </html>

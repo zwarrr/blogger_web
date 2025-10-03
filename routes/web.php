@@ -30,6 +30,13 @@ Route::get('/test-csrf', function () {
     return view('test-csrf');
 });
 
+// Route untuk refresh CSRF token
+Route::get('/refresh-csrf', function() {
+    return response()->json([
+        'token' => csrf_token()
+    ]);
+})->name('refresh.csrf');
+
 // Public blog routes (user can only view list and detail)
 // Keep /posts for backward compatibility but redirect to root so URL stays clean
 Route::get('/posts', function () { return redirect()->route('user.views'); });

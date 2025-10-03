@@ -92,20 +92,7 @@
 </head>
 <body class="bg-[#F5F7FB] text-gray-800">
   
-  <script>
-    // Clean initial loading
-    document.addEventListener('DOMContentLoaded', function() {
-      const initialLoading = document.getElementById('initialLoading');
-      if (initialLoading) {
-        setTimeout(() => {
-          initialLoading.classList.remove('active');
-          setTimeout(() => {
-            initialLoading.style.display = 'none';
-          }, 300);
-        }, 800);
-      }
-    });
-  </script>
+
 
   <!-- Page Transition Overlay (Hidden by default) -->
   <div class="page-transition" id="pageTransition" style="opacity: 0; visibility: hidden; pointer-events: none;">
@@ -344,152 +331,189 @@
           </div>
         </div>
 
-        <script>
-          // Modal controls (reuse from admin)
-          (function(){
-            const modal = document.getElementById('modalNewPost');
-            const openBtn = document.getElementById('btnOpenNewPost');
-            const closeBtn = document.getElementById('btnCloseNewPost');
-            const cancelBtn = document.getElementById('btnCancelNewPost');
-            function open(){ modal.classList.remove('hidden'); document.documentElement.classList.add('overflow-hidden'); document.body.classList.add('overflow-hidden'); }
-            function close(){ modal.classList.add('hidden'); document.documentElement.classList.remove('overflow-hidden'); document.body.classList.remove('overflow-hidden'); }
-            openBtn?.addEventListener('click', open);
-            closeBtn?.addEventListener('click', close);
-            cancelBtn?.addEventListener('click', close);
-            modal?.addEventListener('click', (e)=> { if (e.target===modal) close(); });
-          })();
 
-          // Kebab menu + edit wiring
-          (function(){
-            const buttons = document.querySelectorAll('[data-menu-button]');
-            let openMenu = null;
-            function closeAny(){ if(openMenu){ openMenu.classList.add('hidden'); openMenu=null; } }
-            function placeMenuByButton(menu, btn){ if(menu.parentElement!==document.body){ document.body.appendChild(menu); } menu.classList.remove('absolute'); menu.style.position='fixed'; const b=btn.getBoundingClientRect(); menu.style.left=(b.right-160)+'px'; menu.style.top=(b.bottom+8)+'px'; }
-            buttons.forEach(btn=>{ btn.addEventListener('click', (e)=>{ e.stopPropagation(); const id = btn.getAttribute('data-menu-id'); const menu=document.getElementById(id); if(!menu) return; const willOpen = menu.classList.contains('hidden'); if(openMenu && openMenu!==menu){ openMenu.classList.add('hidden'); } menu.classList.toggle('hidden'); if(willOpen) placeMenuByButton(menu, btn); openMenu = willOpen?menu:null; }); });
-            document.addEventListener('click', closeAny);
-            window.addEventListener('scroll', closeAny, {passive:true});
-            window.addEventListener('resize', closeAny);
-
-            const editModal = document.getElementById('modalEditPost');
-            const closeEdit = ()=>{ editModal.classList.add('hidden'); document.documentElement.classList.remove('overflow-hidden'); document.body.classList.remove('overflow-hidden'); };
-            const openEdit = ()=>{ editModal.classList.remove('hidden'); document.documentElement.classList.add('overflow-hidden'); document.body.classList.add('overflow-hidden'); };
-            document.getElementById('btnCloseEditPost')?.addEventListener('click', closeEdit);
-            document.getElementById('btnCancelEditPost')?.addEventListener('click', closeEdit);
-            editModal?.addEventListener('click', (e)=>{ if(e.target===editModal) closeEdit(); });
-
-            document.querySelectorAll('[data-action="edit"]').forEach(btn=>{
-              btn.addEventListener('click', ()=>{
-                const post = btn.dataset.post ? JSON.parse(btn.dataset.post) : null;
-                if(!post) return;
-                const form = document.getElementById('formEditPost');
-                form.action = '{{ route('author.posts.update', '__ID__') }}'.replace('__ID__', post.id);
-                form.querySelector('[name="title"]').value = post.title || '';
-                form.querySelector('[name="category_id"]').value = post.category_id || '';
-                form.querySelector('[name="description"]').value = post.description || '';
-                form.querySelector('[name="location"]').value = post.location || '';
-                form.querySelector('[name="published_at"]').value = (post.published_at ? post.published_at.replace(' ', 'T') : '');
-                form.querySelector('[name="allow_comments"]').checked = !!post.allow_comments;
-                form.querySelector('[name="is_pinned"]').checked = !!post.is_pinned;
-                form.querySelector('[name="is_featured"]').checked = !!post.is_featured;
-                form.querySelector('[name="is_published"]').checked = (post.status === 'Published');
-                openEdit();
-              });
-            });
-          })();
-        </script>
         
-        <!-- Initial Loading Script -->
-        <script>
-          document.addEventListener('DOMContentLoaded', () => {
-            // Auto hide initial loading
-            setTimeout(() => {
-              const initialOverlay = document.getElementById('initialLoading');
-              if (initialOverlay) {
-                initialOverlay.style.opacity = '0';
-                setTimeout(() => {
-                  initialOverlay.style.display = 'none';
-                }, 300);
-              }
-            }, 800);
-          });
-        </script>
+
       </main>
     </div>
   </div>
   
-  <!-- CRUD Loading Setup -->
+  <!-- Fixed Modal and UI Controls -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Function to show loading
-      function showLoading(message = 'loadinggg......') {
-        const pageTransition = document.getElementById('pageTransition');
-        if (pageTransition) {
-          pageTransition.style.display = 'flex';
-          pageTransition.style.opacity = '1';
-          pageTransition.style.visibility = 'visible';
-          pageTransition.style.pointerEvents = 'all';
-          pageTransition.classList.add('active');
-          
-          const loadingText = pageTransition.querySelector('.loading-text');
-          if (loadingText) {
-            loadingText.textContent = message;
-          }
-        }
+      console.log('✅ Author Manage Posts - DOM loaded');
+      
+      // Modal elements
+      const modalNew = document.getElementById('modalNewPost');
+      const modalEdit = document.getElementById('modalEditPost');
+      
+      // New Post Modal Controls
+      const btnOpenNew = document.getElementById('btnOpenNewPost');
+      const btnCloseNew = document.getElementById('btnCloseNewPost');
+      const btnCancelNew = document.getElementById('btnCancelNewPost');
+      
+      if (btnOpenNew && modalNew) {
+        btnOpenNew.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('🔵 Opening New Post Modal');
+          modalNew.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        });
       }
       
-      // Add loading to all forms
-      document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-          showLoading('loadinggg......');
+      if (btnCloseNew && modalNew) {
+        btnCloseNew.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('🔴 Closing New Post Modal');
+          modalNew.classList.add('hidden');
+          document.body.style.overflow = 'auto';
         });
-      });
+      }
       
-      // Add loading to action buttons and modal triggers
-      document.querySelectorAll('button[type="submit"], [data-action], .btn-create, .btn-edit, .btn-delete, .btn-new-post').forEach(button => {
-        button.addEventListener('click', function() {
-          showLoading('loadinggg......');
+      if (btnCancelNew && modalNew) {
+        btnCancelNew.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('🔴 Canceling New Post Modal');
+          modalNew.classList.add('hidden');
+          document.body.style.overflow = 'auto';
+        });
+      }
+      
+      // Edit Post Modal Controls
+      const btnCloseEdit = document.getElementById('btnCloseEditPost');
+      const btnCancelEdit = document.getElementById('btnCancelEditPost');
+      
+      if (btnCloseEdit && modalEdit) {
+        btnCloseEdit.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('🔴 Closing Edit Post Modal');
+          modalEdit.classList.add('hidden');
+          document.body.style.overflow = 'auto';
+        });
+      }
+      
+      if (btnCancelEdit && modalEdit) {
+        btnCancelEdit.addEventListener('click', function(e) {
+          e.preventDefault();
+          console.log('🔴 Canceling Edit Post Modal');
+          modalEdit.classList.add('hidden');
+          document.body.style.overflow = 'auto';
+        });
+      }
+      
+      // Dropdown menu controls
+      document.querySelectorAll('[data-menu-button]').forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
           
-          // For modal actions, hide loading after a short delay
-          if (button.dataset.action === 'edit' || button.classList.contains('btn-edit') || button.classList.contains('btn-new-post')) {
-            setTimeout(() => {
-              if (window.forceHideLoading) window.forceHideLoading();
-            }, 1000);
+          const menuId = this.getAttribute('data-menu-id');
+          const menu = document.getElementById(menuId);
+          console.log('🔵 Toggle menu:', menuId);
+          
+          // Close all other menus first
+          document.querySelectorAll('[id^="post-menu-"]').forEach(m => {
+            if (m !== menu && !m.classList.contains('hidden')) {
+              m.classList.add('hidden');
+            }
+          });
+          
+          // Toggle current menu
+          if (menu) {
+            menu.classList.toggle('hidden');
           }
         });
       });
+      
+      // Edit Post Actions
+      document.querySelectorAll('[data-action="edit"]').forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          try {
+            const postDataStr = this.getAttribute('data-post');
+            const postData = JSON.parse(postDataStr);
+            console.log('🔵 Edit post:', postData.title);
+            
+            const form = document.getElementById('formEditPost');
+            if (form && modalEdit) {
+              // Set form action with proper Laravel route
+              form.action = '{{ route('author.posts.update', '__ID__') }}'.replace('__ID__', postData.id);
+              
+              // Populate form fields
+              const titleField = form.querySelector('[name="title"]');
+              const categoryField = form.querySelector('[name="category_id"]');
+              const descField = form.querySelector('[name="description"]');
+              const locationField = form.querySelector('[name="location"]');
+              const publishField = form.querySelector('[name="published_at"]');
+              
+              if (titleField) titleField.value = postData.title || '';
+              if (categoryField) categoryField.value = postData.category_id || '';
+              if (descField) descField.value = postData.description || '';
+              if (locationField) locationField.value = postData.location || '';
+              if (publishField && postData.published_at) {
+                publishField.value = postData.published_at.replace(' ', 'T');
+              }
+              
+              // Set checkboxes
+              const allowComments = form.querySelector('[name="allow_comments"]');
+              const isPinned = form.querySelector('[name="is_pinned"]');
+              const isFeatured = form.querySelector('[name="is_featured"]');
+              const isPublished = form.querySelector('[name="is_published"]');
+              
+              if (allowComments) allowComments.checked = !!postData.allow_comments;
+              if (isPinned) isPinned.checked = !!postData.is_pinned;
+              if (isFeatured) isFeatured.checked = !!postData.is_featured;
+              if (isPublished) isPublished.checked = (postData.status === 'Published');
+              
+              // Close dropdown menu
+              const menu = this.closest('[id^="post-menu-"]');
+              if (menu) menu.classList.add('hidden');
+              
+              // Open modal
+              modalEdit.classList.remove('hidden');
+              document.body.style.overflow = 'hidden';
+            }
+          } catch (error) {
+            console.error('❌ Error editing post:', error);
+          }
+        });
+      });
+      
+      // Close menus when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('[data-menu-button]') && !e.target.closest('[id^="post-menu-"]')) {
+          document.querySelectorAll('[id^="post-menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+          });
+        }
+      });
+      
+      // Close modals when clicking backdrop
+      if (modalNew) {
+        modalNew.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+          }
+        });
+      }
+      
+      if (modalEdit) {
+        modalEdit.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+          }
+        });
+      }
     });
   </script>
   
-  <!-- Anti-Stuck Loading Protection -->
-  <script>
-    // Global loading protection for author
-    window.loadingDebug = true;
-    window.forceHideLoading = function() {
-      const loadings = document.querySelectorAll('[id*="Loading"], [id*="Transition"], .page-transition');
-      loadings.forEach(el => {
-        if (el) {
-          el.style.opacity = '0';
-          el.style.visibility = 'hidden';
-          el.style.pointerEvents = 'none';
-          el.classList.remove('active');
-        }
-      });
-    };
-    
-    // Auto force-hide any stuck loading after page load
-    window.addEventListener('load', () => {
-      setTimeout(window.forceHideLoading, 1000);
-    });
-    
-    // Keyboard shortcut to force hide (Escape key)
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        window.forceHideLoading();
-      }
-    });
-  </script>
+
   
   <!-- Enhanced Animation System -->
-  @vite(['resources/js/animations.js'])
+  @vite(['resources/js/animations-fixed.js', 'resources/js/loading-fix.js'])
 </body>
 </html>

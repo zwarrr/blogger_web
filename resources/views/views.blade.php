@@ -251,28 +251,19 @@
       }
     }
 
-    /* Section reveal animation */
-    .reveal {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: all 0.6s ease-out;
+    /* Cards are always visible - no reveal animations */
+    .stagger-container .stagger-item,
+    .stagger-container article {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+      visibility: visible !important;
     }
-
-    .reveal.revealed {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* Stagger animation for cards */
-    .stagger-container .stagger-item {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: all 0.6s ease-out;
-    }
-
-    .stagger-container .stagger-item.revealed {
-      opacity: 1;
-      transform: translateY(0);
+    
+    /* Ensure main content is visible */
+    main {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+      visibility: visible !important;
     }
 
     /* Navigation smooth transition - hover removed */
@@ -435,53 +426,7 @@
 
 <body class="bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50 text-gray-800 antialiased fade-in-page">
   
-  <script>
-    // Initial loading with auto-hide protection
-    (function() {
-      // Show loading immediately
-      const initialLoading = document.createElement('div');
-      initialLoading.id = 'initialLoading';
-      initialLoading.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 50%,#1a1a1a 100%);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
-      initialLoading.innerHTML = `
-        <svg style="width:96px;height:96px;color:#FF5722;animation:spin 1s linear infinite" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="31.416" stroke-dashoffset="31.416" style="animation:dash 2s ease-in-out infinite"/>
-        </svg>
-        <p style="color:#FFCCBC;font-size:18px;font-weight:600;margin-top:20px;animation:pulse 1.5s ease-in-out infinite">loadinggg......</p>
-        <style>
-          @keyframes spin { to { transform: rotate(360deg); } }
-          @keyframes dash { 0% { stroke-dashoffset: 31.416; } 50% { stroke-dashoffset: 15.708; } 100% { stroke-dashoffset: 0; } }
-          @keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
-        </style>
-      `;
-      document.documentElement.appendChild(initialLoading);
-      
-      // Auto-hide after DOM loaded (fast)
-      const hideLoading = () => {
-        if (initialLoading && initialLoading.parentNode) {
-          initialLoading.style.opacity = '0';
-          initialLoading.style.transition = 'opacity 0.3s ease';
-          setTimeout(() => {
-            if (initialLoading.parentNode) {
-              initialLoading.parentNode.removeChild(initialLoading);
-            }
-          }, 300);
-        }
-      };
-      
-      // Multiple hide triggers to prevent stuck
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', hideLoading, { once: true });
-      } else {
-        setTimeout(hideLoading, 100);
-      }
-      
-      // Safety timeout - force hide after 3 seconds max
-      setTimeout(hideLoading, 3000);
-      
-      // Hide on window load as backup
-      window.addEventListener('load', hideLoading, { once: true });
-    })();
-  </script>
+
 
   <!-- Page Transition Overlay (Hidden by default) -->
   <div class="page-transition" id="pageTransition">
@@ -633,7 +578,7 @@
     </div>
   </section>
 
-  <main class="max-w-7xl mx-auto px-4 py-12 reveal" id="artikel">
+  <main class="max-w-7xl mx-auto px-4 py-12" id="artikel">
     <div class="flex items-center justify-between mb-10">
       <h2 class="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3 gradient-animated">
         <span
@@ -650,7 +595,7 @@
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-container">
       @foreach($posts as $post)
         <article
-          class="bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-lg shadow-gray-200/50 hover-lift card-hover group h-full flex flex-col stagger-item relative">
+          class="bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-lg shadow-gray-200/50 hover-lift card-hover group h-full flex flex-col relative">
           <!-- Card Overlay -->
           <div class="absolute inset-0 card-overlay rounded-2xl pointer-events-none z-10"></div>
           <!-- Card Shimmer Effect -->
@@ -716,7 +661,7 @@
     <div class="mt-8 flex justify-center">{{ $posts->links() }}</div>
   </main>
 
-  <footer class="bg-white/80 backdrop-blur-sm border-t border-gray-200 mt-16 reveal">
+  <footer class="bg-white/80 backdrop-blur-sm border-t border-gray-200 mt-16">
     <div class="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
       <div>
         <div class="flex items-center gap-2"> <span
@@ -820,48 +765,10 @@
     });
   </script>
 
-  <!-- Anti-Stuck Loading Protection -->
-  <script>
-    // Global loading protection and debug
-    window.loadingDebug = true;
-    window.forceHideLoading = function() {
-      const loadings = document.querySelectorAll('[id*="Loading"], [id*="Transition"], .page-transition');
-      loadings.forEach(el => {
-        if (el) {
-          el.style.opacity = '0';
-          el.style.visibility = 'hidden';
-          el.style.pointerEvents = 'none';
-          el.classList.remove('active');
-          console.log('Force hidden:', el.id || el.className);
-        }
-      });
-    };
-    
-    // Auto force-hide any stuck loading after page load
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        if (window.loadingDebug) console.log('Auto force-hide check...');
-        window.forceHideLoading();
-      }, 1000);
-    });
-    
-    // Emergency force-hide on user interaction
-    document.addEventListener('click', function emergencyHide() {
-      setTimeout(window.forceHideLoading, 2000);
-      document.removeEventListener('click', emergencyHide);
-    }, { once: true });
-    
-    // Keyboard shortcut to force hide (Escape key)
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        window.forceHideLoading();
-        console.log('Loading force-hidden by Escape key');
-      }
-    });
-  </script>
+
   
   <!-- Enhanced Animation System -->
-  @vite(['resources/js/animations.js'])
+  @vite(['resources/js/animations-fixed.js', 'resources/js/loading-fix.js'])
   
   <!-- AJAX untuk tracking pembaca aktif -->
   <script>

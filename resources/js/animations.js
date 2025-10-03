@@ -1,19 +1,19 @@
 /**
  * Enhanced Animation System for Blogger Website
  * Provides smooth page transitions, section reveals, and interactive animations
+ * Fixed version - Does not intercept or block normal functionality
  */
 
 class BloggerAnimations {
     constructor() {
         this.pageTransition = document.getElementById('pageTransition');
+        this.loadingTimeout = null;
         this.init();
     }
 
     init() {
         this.setupInitialPageLoad();
-        this.setupPageUnload();
-        this.setupPageTransitions();
-        this.setupCRUDOperations();
+        this.setupMinimalLoading();
         this.setupSmoothScroll();
         this.setupRevealAnimations();
         this.setupStaggerAnimations();
@@ -22,12 +22,18 @@ class BloggerAnimations {
         this.removeInitialTransition();
     }
 
-    // Page transition handler - Intercept ALL internal links
+    // Page transition handler - Only for specific links with page-transition class
     setupPageTransitions() {
-        // Intercept ALL links, not just those with page-link class
+        // Only intercept links that explicitly want page transitions
         document.addEventListener('click', (e) => {
             const link = e.target.closest('a');
             if (!link) return;
+            
+            // Only handle links with specific class or data attribute
+            if (!link.classList.contains('page-transition') && 
+                !link.hasAttribute('data-page-transition')) {
+                return; // Let normal links work normally
+            }
             
             const href = link.getAttribute('href');
             
@@ -44,30 +50,34 @@ class BloggerAnimations {
                 return;
             }
             
-            // Prevent default navigation
+            // Only prevent default for transition links
             e.preventDefault();
             
             // Determine loading text based on link context
-            let loadingText = 'loadinggg......';
+            let loadingText = 'Loading...';
             const linkText = link.textContent.trim().toLowerCase();
             const linkHref = href.toLowerCase();
             
             if (linkText.includes('baca') || linkText.includes('read') || linkHref.includes('post')) {
-                loadingText = 'loadinggg......';
+                loadingText = 'Loading article...';
             } else if (linkText.includes('home') || linkText.includes('beranda') || linkHref === '/' || linkHref.includes('home')) {
-                loadingText = 'loadinggg......';
+                loadingText = 'Loading home...';
             } else if (linkText.includes('detail') || linkHref.includes('detail')) {
-                loadingText = 'loadinggg......';
+                loadingText = 'Loading details...';
             } else if (linkText.includes('kategori') || linkText.includes('category')) {
-                loadingText = 'loadinggg......';
+                loadingText = 'Loading category...';
             } else if (linkText.includes('search') || linkText.includes('cari')) {
-                loadingText = 'loadinggg......';
+                loadingText = 'Searching...';
+            } else if (linkText.includes('dashboard')) {
+                loadingText = 'Loading dashboard...';
+            } else if (linkText.includes('manage') || linkText.includes('kelola')) {
+                loadingText = 'Loading management...';
             }
             
-            // Show loading and navigate with faster duration
+            // Show loading and navigate with very short duration
             this.showTransition(() => {
                 window.location.href = href;
-            }, loadingText, 400);
+            }, loadingText, 200);
         });
         
         // Also intercept browser back/forward buttons
@@ -78,14 +88,14 @@ class BloggerAnimations {
         });
     }
 
-    showTransition(callback, loadingText = 'loadinggg......', duration = 500) {
+    showTransition(callback, loadingText = 'Loading...', duration = 300) {
         if (this.pageTransition) {
             // Clear any existing timeout to prevent stuck loading
             if (this.loadingTimeout) {
                 clearTimeout(this.loadingTimeout);
             }
             
-            // Force show loading overlay with display block
+            // Only show loading for actual navigation (not modal actions)
             this.pageTransition.style.display = 'flex';
             this.pageTransition.style.opacity = '1';
             this.pageTransition.style.visibility = 'visible';
@@ -102,26 +112,26 @@ class BloggerAnimations {
                 console.log('Loading started:', loadingText, `(${duration}ms)`);
             }
             
-            // Set loading timeout with shorter duration to prevent stuck
-            const actualDuration = Math.min(duration, 2000); // Max 2 seconds
+            // Much shorter duration to prevent stuck loading
+            const actualDuration = Math.min(duration, 1000); // Max 1 second
             this.loadingTimeout = setTimeout(() => {
                 try {
                     callback();
                 } catch (error) {
                     console.error('Loading callback error:', error);
-                    this.hideLoading(); // Auto-hide if callback fails
+                    this.hideLoading();
                 }
             }, actualDuration);
             
-            // Aggressive safety timeout (3 seconds max)
+            // Aggressive safety timeout (1.5 seconds max)
             setTimeout(() => {
-                if (this.pageTransition.classList.contains('active')) {
+                if (this.pageTransition && this.pageTransition.classList.contains('active')) {
                     if (window.loadingDebug) {
                         console.warn('Loading stuck detected, force hiding...');
                     }
                     this.hideLoading();
                 }
-            }, 3000);
+            }, 1500);
         } else {
             if (window.loadingDebug) {
                 console.warn('Page transition element not found!');
@@ -131,23 +141,44 @@ class BloggerAnimations {
     }
 
     removeInitialTransition() {
-        // Multiple attempts to hide loading
-        const attempts = [100, 300, 500, 1000];
+        // Aggressively hide loading at multiple intervals
+        const attempts = [50, 100, 200, 500, 1000, 2000];
         attempts.forEach(delay => {
             setTimeout(() => {
                 this.hideLoading();
-                // Also hide any other loading elements
+                
+                // Hide any other loading elements
                 const initialLoading = document.getElementById('initialLoading');
                 if (initialLoading) {
                     initialLoading.style.opacity = '0';
+                    initialLoading.style.visibility = 'hidden';
+                    initialLoading.style.pointerEvents = 'none';
                     setTimeout(() => {
                         if (initialLoading.parentNode) {
                             initialLoading.parentNode.removeChild(initialLoading);
                         }
-                    }, 300);
+                    }, 100);
                 }
+                
+                // Force hide any stuck transitions
+                const allTransitions = document.querySelectorAll('.page-transition, [id*="transition"], [id*="loading"]');
+                allTransitions.forEach(el => {
+                    if (el && el !== this.pageTransition) {
+                        el.style.opacity = '0';
+                        el.style.visibility = 'hidden';
+                        el.style.pointerEvents = 'none';
+                        el.style.display = 'none';
+                    }
+                });
             }, delay);
         });
+        
+        // Final safety check
+        setTimeout(() => {
+            if (window.forceHideLoading) {
+                window.forceHideLoading();
+            }
+        }, 3000);
     }
     
     hideLoading() {
@@ -188,24 +219,27 @@ class BloggerAnimations {
     
     // Setup loading saat initial page load
     setupInitialPageLoad() {
-        // Show loading immediately when page starts loading
-        if (document.readyState === 'loading') {
-            this.showLoadingImmediately('loadinggg......');
-        }
+        // Don't show loading immediately - let the page load naturally
+        // Only hide any existing loading
         
         // Hide loading when page is fully loaded
         window.addEventListener('load', () => {
             setTimeout(() => {
                 this.hideLoading();
-            }, 200);
+            }, 100);
         });
         
         // Also handle DOMContentLoaded for faster hiding
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 this.hideLoading();
-            }, 100);
+            }, 50);
         });
+        
+        // Force hide any stuck loading after 2 seconds
+        setTimeout(() => {
+            this.hideLoading();
+        }, 2000);
     }
     
     // Setup loading when leaving page
@@ -214,7 +248,8 @@ class BloggerAnimations {
         window.addEventListener('beforeunload', (e) => {
             // Only show if user is actually navigating away, not just refreshing or closing tab
             if (e.returnValue !== undefined) {
-                this.showLoadingImmediately('loadinggg......');
+                // Disable this to prevent unwanted loading
+                // this.showLoadingImmediately('Loading...');
             }
         });
         
@@ -223,8 +258,9 @@ class BloggerAnimations {
     }
     
     // Show loading immediately without timeout
-    showLoadingImmediately(loadingText = 'loadinggg......') {
+    showLoadingImmediately(loadingText = 'Loading...') {
         if (this.pageTransition) {
+            this.pageTransition.style.display = 'flex';
             this.pageTransition.style.opacity = '1';
             this.pageTransition.style.visibility = 'visible';
             this.pageTransition.style.pointerEvents = 'all';
@@ -234,108 +270,82 @@ class BloggerAnimations {
             if (loadingTextElement) {
                 loadingTextElement.textContent = loadingText;
             }
+            
+            // Always set a safety timeout
+            setTimeout(() => {
+                this.hideLoading();
+            }, 2000);
         }
     }
     
-    // Setup CRUD operations loading
+    // Setup CRUD operations loading - Only for actual server requests
     setupCRUDOperations() {
-        // Intercept all buttons for CRUD operations
-        document.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (!button) return;
-            
-            const buttonText = button.textContent.trim().toLowerCase();
-            const buttonClass = button.className.toLowerCase();
-            const form = button.closest('form');
-            
-            let loadingText = 'loadinggg......';
-            let duration = 600;
-            
-            // Determine loading message based on button context
-            if (buttonText.includes('simpan') || buttonText.includes('save')) {
-                loadingText = 'loadinggg......';
-                duration = 800;
-            } else if (buttonText.includes('hapus') || buttonText.includes('delete')) {
-                loadingText = 'loadinggg......';
-                duration = 600;
-            } else if (buttonText.includes('edit') || buttonText.includes('update')) {
-                loadingText = 'loadinggg......';
-                duration = 700;
-            } else if (buttonText.includes('tambah') || buttonText.includes('create') || buttonText.includes('add')) {
-                loadingText = 'loadinggg......';
-                duration = 700;
-            } else if (buttonText.includes('login') || buttonText.includes('masuk')) {
-                loadingText = 'loadinggg......';
-                duration = 800;
-            } else if (buttonText.includes('register') || buttonText.includes('daftar')) {
-                loadingText = 'loadinggg......';
-                duration = 900;
-            } else if (buttonText.includes('search') || buttonText.includes('cari')) {
-                loadingText = 'loadinggg......';
-                duration = 500;
-            } else if (buttonText.includes('kirim') || buttonText.includes('submit')) {
-                loadingText = 'loadinggg......';
-                duration = 600;
-            } else if (buttonText.includes('upload')) {
-                loadingText = 'loadinggg......';
-                duration = 1000;
-            } else if (buttonClass.includes('btn-danger') || buttonClass.includes('delete')) {
-                loadingText = 'loadinggg......';
-                duration = 500;
-            } else if (buttonClass.includes('btn-success') || buttonClass.includes('save')) {
-                loadingText = 'loadinggg......';
-                duration = 600;
-            }
-            
-            // Show loading for form buttons
-            if (form && button.type === 'submit') {
-                this.showTransition(() => {
-                    // Let form submit naturally
-                }, loadingText, duration);
-            }
-            // Show loading for AJAX buttons (data-* attributes)
-            else if (button.hasAttribute('data-action') || button.hasAttribute('data-url')) {
-                this.showTransition(() => {
-                    // Let button action proceed
-                }, loadingText, duration);
-            }
-        });
-        
-        // Handle form submissions more specifically
+        // Handle form submissions only (actual server requests)
         document.addEventListener('submit', (e) => {
             const form = e.target;
             const action = form.getAttribute('action') || '';
             const method = form.getAttribute('method') || 'GET';
             
-            let loadingText = 'loadinggg......';
-            let duration = 700;
+            // Skip if it's just a search form or GET method
+            if (method.toLowerCase() === 'get') {
+                return;
+            }
+            
+            let loadingText = 'Processing...';
+            let duration = 500;
             
             if (action.includes('login')) {
-                loadingText = 'loadinggg......';
-                duration = 800;
-            } else if (action.includes('register')) {
-                loadingText = 'loadinggg......';
-                duration = 900;
-            } else if (action.includes('comment')) {
-                loadingText = 'loadinggg......';
+                loadingText = 'Logging in...';
                 duration = 600;
-            } else if (action.includes('search')) {
-                loadingText = 'loadinggg......';
+            } else if (action.includes('register')) {
+                loadingText = 'Creating account...';
+                duration = 700;
+            } else if (action.includes('comment')) {
+                loadingText = 'Posting comment...';
+                duration = 400;
+            } else if (action.includes('store')) {
+                loadingText = 'Creating...';
+                duration = 500;
+            } else if (action.includes('update')) {
+                loadingText = 'Updating...';
+                duration = 500;
+            } else if (action.includes('destroy') || method.toLowerCase() === 'delete') {
+                loadingText = 'Deleting...';
                 duration = 400;
             } else if (method.toLowerCase() === 'post') {
-                loadingText = 'loadinggg......';
-                duration = 600;
+                loadingText = 'Saving...';
+                duration = 500;
             } else if (method.toLowerCase() === 'put' || method.toLowerCase() === 'patch') {
-                loadingText = 'loadinggg......';
-                duration = 600;
-            } else if (method.toLowerCase() === 'delete') {
-                loadingText = 'loadinggg......';
+                loadingText = 'Updating...';
                 duration = 500;
             }
             
             this.showTransition(() => {
                 // Let form submit naturally
             }, loadingText, duration);
+        });
+        
+        // Only handle specific buttons that need loading animation
+        // Don't intercept all button clicks to avoid breaking functionality
+        document.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            
+            // Only show loading for buttons that explicitly request it
+            if (button.hasAttribute('data-loading') || 
+                button.classList.contains('loading-button')) {
+                
+                const buttonText = button.textContent.trim().toLowerCase();
+                let loadingText = button.getAttribute('data-loading-text') || 'Processing...';
+                
+                if (buttonText.includes('delete') || buttonText.includes('hapus')) {
+                    loadingText = 'Deleting...';
+                }
+                
+                this.showTransition(() => {
+                    // Let button action proceed naturally
+                }, loadingText, 300);
+            }
         });
     }
 
