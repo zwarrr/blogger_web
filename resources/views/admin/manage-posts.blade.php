@@ -602,7 +602,72 @@
                                 setTimeout(() => loading.style.display = 'none', 300);
                               }
                             }, 800);
+                            
+                            // Add CRUD loading animations
+                            setupCRUDLoading();
                           });
+                          
+                          function setupCRUDLoading() {
+                            // Function to show loading
+                            function showLoading(message = 'loadinggg......') {
+                              const pageTransition = document.getElementById('pageTransition');
+                              if (pageTransition) {
+                                pageTransition.style.display = 'flex';
+                                pageTransition.style.opacity = '1';
+                                pageTransition.style.visibility = 'visible';
+                                pageTransition.style.pointerEvents = 'all';
+                                pageTransition.classList.add('active');
+                                
+                                const loadingText = pageTransition.querySelector('.loading-text');
+                                if (loadingText) {
+                                  loadingText.textContent = message;
+                                }
+                              }
+                            }
+                            
+                            // Add loading to all forms
+                            document.querySelectorAll('form').forEach(form => {
+                              form.addEventListener('submit', function(e) {
+                                const action = form.getAttribute('action') || '';
+                                let loadingMessage = 'loadinggg......';
+                                
+                                if (action.includes('store')) {
+                                  loadingMessage = 'loadinggg......';
+                                } else if (action.includes('update')) {
+                                  loadingMessage = 'loadinggg......';
+                                } else if (action.includes('destroy')) {
+                                  loadingMessage = 'loadinggg......';
+                                }
+                                
+                                showLoading(loadingMessage);
+                              });
+                            });
+                            
+                            // Add loading to delete buttons
+                            document.querySelectorAll('button[type="submit"]').forEach(button => {
+                              button.addEventListener('click', function(e) {
+                                const form = button.closest('form');
+                                if (form) {
+                                  const action = form.getAttribute('action') || '';
+                                  if (action.includes('destroy')) {
+                                    showLoading('loadinggg......');
+                                  }
+                                }
+                              });
+                            });
+                            
+                            // Add loading to modal buttons
+                            document.querySelectorAll('[data-action]').forEach(button => {
+                              button.addEventListener('click', function() {
+                                if (button.dataset.action === 'edit') {
+                                  showLoading('loadinggg......');
+                                  setTimeout(() => {
+                                    if (window.forceHideLoading) window.forceHideLoading();
+                                  }, 1000);
+                                }
+                              });
+                            });
+                          }
                         </script>
                     </main>
                 </div>

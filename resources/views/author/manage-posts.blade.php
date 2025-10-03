@@ -417,6 +417,49 @@
     </div>
   </div>
   
+  <!-- CRUD Loading Setup -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Function to show loading
+      function showLoading(message = 'loadinggg......') {
+        const pageTransition = document.getElementById('pageTransition');
+        if (pageTransition) {
+          pageTransition.style.display = 'flex';
+          pageTransition.style.opacity = '1';
+          pageTransition.style.visibility = 'visible';
+          pageTransition.style.pointerEvents = 'all';
+          pageTransition.classList.add('active');
+          
+          const loadingText = pageTransition.querySelector('.loading-text');
+          if (loadingText) {
+            loadingText.textContent = message;
+          }
+        }
+      }
+      
+      // Add loading to all forms
+      document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          showLoading('loadinggg......');
+        });
+      });
+      
+      // Add loading to action buttons and modal triggers
+      document.querySelectorAll('button[type="submit"], [data-action], .btn-create, .btn-edit, .btn-delete, .btn-new-post').forEach(button => {
+        button.addEventListener('click', function() {
+          showLoading('loadinggg......');
+          
+          // For modal actions, hide loading after a short delay
+          if (button.dataset.action === 'edit' || button.classList.contains('btn-edit') || button.classList.contains('btn-new-post')) {
+            setTimeout(() => {
+              if (window.forceHideLoading) window.forceHideLoading();
+            }, 1000);
+          }
+        });
+      });
+    });
+  </script>
+  
   <!-- Anti-Stuck Loading Protection -->
   <script>
     // Global loading protection for author

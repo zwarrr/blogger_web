@@ -348,6 +348,42 @@
     })();
   </script>
   
+  <!-- CRUD Loading Setup -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Function to show loading
+      function showLoading(message = 'loadinggg......') {
+        const pageTransition = document.getElementById('pageTransition');
+        if (pageTransition) {
+          pageTransition.style.display = 'flex';
+          pageTransition.style.opacity = '1';
+          pageTransition.style.visibility = 'visible';
+          pageTransition.style.pointerEvents = 'all';
+          pageTransition.classList.add('active');
+          
+          const loadingText = pageTransition.querySelector('.loading-text');
+          if (loadingText) {
+            loadingText.textContent = message;
+          }
+        }
+      }
+      
+      // Add loading to all forms
+      document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          showLoading('loadinggg......');
+        });
+      });
+      
+      // Add loading to action buttons
+      document.querySelectorAll('button[type="submit"], [data-action]').forEach(button => {
+        button.addEventListener('click', function() {
+          showLoading('loadinggg......');
+        });
+      });
+    });
+  </script>
+  
   <!-- Anti-Stuck Loading Protection -->
   <script>
     window.loadingDebug = true;
