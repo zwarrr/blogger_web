@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\Post;
 use App\Models\Category;
 
@@ -11,47 +12,68 @@ class AuthorPostController extends Controller
 {
     public function index()
     {
-        $authorName = Auth::user()->name;
-        $posts = Post::with('category')
-            ->where('author', $authorName)
-            ->orderBy('created_at','desc')
-            ->get()
-            ->map(function(Post $p){
-                return [
-                    'id' => $p->id,
-                    'cover_image' => $p->cover_image,
-                    'title' => $p->title,
-                    'category_id' => $p->category_id,
-                    'category' => $p->category ? [
-                        'id' => $p->category->id,
-                        'name' => $p->category->name,
-                        'icon' => $p->category->icon,
-                        'color' => $p->category->color,
-                    ] : null,
-                    'description' => $p->description,
-                    'location' => $p->location,
-                    'published_at' => optional($p->published_at)->format('Y-m-d H:i'),
-                    'date' => $p->created_at?->format('Y-m-d'),
-                    'status' => $p->is_published ? 'Published' : 'Draft',
-                    'allow_comments' => (bool)$p->allow_comments,
-                    'is_pinned' => (bool)$p->is_pinned,
-                    'is_featured' => (bool)$p->is_featured,
-                    'is_published' => (bool)$p->is_published,
-                ];
-            });
+        try {
+            \Log::info('AuthorPostController::index - Starting');
+            
+            $user = auth('web')->user();
+            if (!$user) {
+                \Log::error('AuthorPostController::index - User not authenticated');
+                return redirect()->route('auth.login');
+            }
+            
+            $authorName = $user->name;
+            \Log::info('AuthorPostController::index - Author: ' . $authorName);
+            
+            $posts = Post::with('category')
+                ->where('author', $authorName)
+                ->orderBy('created_at','desc')
+                ->get()
+                ->map(function(Post $p){
+                    return [
+                        'id' => $p->id,
+                        'cover_image' => $p->cover_image,
+                        'title' => $p->title,
+                        'category_id' => $p->category_id,
+                        'category' => $p->category ? [
+                            'id' => $p->category->id,
+                            'name' => $p->category->name,
+                            'icon' => $p->category->icon ?? 'fa-folder',
+                            'color' => $p->category->color ?? '#6b7280',
+                        ] : null,
+                        'description' => $p->description,
+                        'location' => $p->location,
+                        'published_at' => optional($p->published_at)->format('Y-m-d H:i'),
+                        'date' => $p->created_at?->format('Y-m-d'),
+                        'status' => $p->is_published ? 'Published' : 'Draft',
+                        'allow_comments' => (bool)$p->allow_comments,
+                        'is_pinned' => (bool)$p->is_pinned,
+                        'is_featured' => (bool)$p->is_featured,
+                        'is_published' => (bool)$p->is_published,
+                    ];
+                });
 
-        $categories = Category::select('id','name','icon','color')
-            ->orderBy('name')
-            ->get()
-            ->map(function(Category $c){
-                return [
-                    'id' => $c->id,
-                    'name' => $c->name,
-                    'icon' => $c->icon,
-                    'color' => $c->color,
-                ];
-            });
-        return view('author.manage-posts', compact('posts','categories'));
+            \Log::info('AuthorPostController::index - Posts count: ' . $posts->count());
+
+            $categories = Category::select('id','name','icon','color')
+                ->orderBy('name')
+                ->get()
+                ->map(function(Category $c){
+                    return [
+                        'id' => $c->id,
+                        'name' => $c->name,
+                        'icon' => $c->icon ?? 'fa-folder',
+                        'color' => $c->color ?? '#6b7280',
+                    ];
+                });
+
+            \Log::info('AuthorPostController::index - Categories count: ' . $categories->count());
+
+            return view('author.posts.index', compact('posts','categories'));
+        } catch (\Exception $e) {
+            \Log::error('AuthorPostController::index - Error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat halaman posts.');
+        }
     }
 
     public function store(Request $request)
@@ -99,9 +121,12 @@ class AuthorPostController extends Controller
             'is_pinned' => (bool)($data['is_pinned'] ?? false),
             'is_featured' => (bool)($data['is_featured'] ?? false),
             'is_published' => (bool)($data['is_published'] ?? false),
-            'author' => Auth::user()->name,
+            'author' => auth('web')->user()->name,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Post created successfully.']);
+        }
         return back()->with('status', 'Post created successfully.');
     }
 
@@ -120,7 +145,7 @@ class AuthorPostController extends Controller
             'is_published' => ['nullable','boolean'],
         ]);
 
-        $post = Post::where('id',$id)->where('author', Auth::user()->name)->firstOrFail();
+        $post = Post::where('id',$id)->where('author', auth('web')->user()->name)->firstOrFail();
 
         $coverPath = $post->cover_image;
         if ($request->hasFile('cover')) {
@@ -148,12 +173,15 @@ class AuthorPostController extends Controller
             'is_published' => (bool)($data['is_published'] ?? false),
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Post updated successfully.']);
+        }
         return back()->with('status', 'Post updated successfully.');
     }
 
     public function destroy(string $id)
     {
-        $post = Post::where('id',$id)->where('author', Auth::user()->name)->firstOrFail();
+        $post = Post::where('id',$id)->where('author', auth('web')->user()->name)->firstOrFail();
         if ($post->cover_image && \Storage::disk('public')->exists($post->cover_image)) {
             \Storage::disk('public')->delete($post->cover_image);
         }

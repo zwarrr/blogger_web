@@ -1,4 +1,4 @@
-<!-- resources/views/admin/dashboard.blade.php -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +7,7 @@
   <title>Admin Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="{{ asset('img/b.svg') }}" type="image/svg+xml">
   <script src="https://unpkg.com/feather-icons"></script>
   <style>
     body { font-family: 'Inter', sans-serif; }

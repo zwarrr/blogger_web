@@ -1,4 +1,4 @@
-<!-- resources/views/admin/manage-comment.blade.php -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +7,7 @@
   <title>Manage Comment</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="{{ asset('img/b.svg') }}" type="image/svg+xml">
   <style>
     body { font-family: 'Inter', sans-serif; margin: 0; }
     .clamp-1,
@@ -89,6 +90,8 @@
       0%, 100% { opacity: 0.7; }
       50% { opacity: 1; }
     }
+    
+
   </style>
 </head>
 <body class="bg-[#F5F7FB] text-gray-800">
@@ -136,10 +139,49 @@
           @if(session('status'))
             <div class="mb-4 rounded-md bg-green-50 text-green-700 px-4 py-2 text-sm border border-green-200">{{ session('status') }}</div>
           @endif
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">All Comments</h3>
+          <div class="mb-8">
+            
+            <!-- Filter Panel -->
+            <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+              <div class="flex flex-col sm:flex-row gap-4">
+                <!-- Filter by Post -->
+                <div class="flex-1">
+                  <label for="postFilter" class="block text-sm font-medium text-gray-700 mb-2">
+                    Filter by Post
+                  </label>
+                  <select id="postFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                    <option value="">All Posts</option>
+                    @php
+                      $uniquePosts = collect($comments)->unique('post_id')->sortBy('post_title');
+                    @endphp
+                    @foreach($uniquePosts as $post)
+                      <option value="{{ $post['post_id'] }}" data-title="{{ $post['post_title'] ?? 'Post '.$post['post_id'] }}">
+                        {{ Str::limit($post['post_title'] ?? 'Post '.$post['post_id'], 50) }} ({{ collect($comments)->where('post_id', $post['post_id'])->count() }})
+                      </option>
+                    @endforeach
+                  </select>
+                </div>
+                
+                <!-- Search -->
+                <div class="flex-1">
+                  <label for="commentSearch" class="block text-sm font-medium text-gray-700 mb-2">
+                    Search Comments
+                  </label>
+                  <div class="relative">
+                    <input type="text" id="commentSearch" placeholder="Search comments, authors, or posts..." 
+                           class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="mt-4 relative">
+          <div class="relative">
             <table class="w-full text-sm text-left table-fixed">
               <colgroup>
                 <col style="width: 10%;">
@@ -165,7 +207,7 @@
               </thead>
               <tbody>
                 @foreach(($comments ?? []) as $c)
-                  <tr class="border-t hover:bg-gray-50 transition-colors">
+                  <tr class="border-t hover:bg-gray-50 transition-colors comment-row" data-post-id="{{ $c['post_id'] }}" data-post-title="{{ $c['post_title'] ?? 'Post '.$c['post_id'] }}">
                     <td class="px-4 py-3">
                       <div class="flex justify-center">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-purple-50 text-purple-700 border border-purple-100">
@@ -471,6 +513,103 @@
     setInterval(() => { clickCount = 0; }, 2000);
   </script>
   
-  @vite(['resources/js/animations.js'])
+  <!-- Simple Comment Filter System -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const postFilter = document.getElementById('postFilter');
+      const commentSearch = document.getElementById('commentSearch');
+      const commentRows = document.querySelectorAll('.comment-row');
+      const tableBody = document.querySelector('tbody');
+      const totalComments = document.getElementById('totalComments');
+      const filteredCount = document.getElementById('filteredCount');
+      
+      let filterTimeout;
+      
+      // Update counter displays
+      function updateCounters(visible, total) {
+        totalComments.textContent = `${total} Total`;
+        filteredCount.textContent = `${visible} Showing`;
+      }
+      
+      // Filter function
+      function performFilter() {
+        const selectedPostId = postFilter.value;
+        const searchTerm = commentSearch.value.toLowerCase().trim();
+        let visibleCount = 0;
+        const totalCount = commentRows.length;
+        
+        commentRows.forEach(row => {
+          const rowPostId = row.dataset.postId;
+          const commentText = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+          const authorName = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+          const postTitle = row.dataset.postTitle.toLowerCase();
+          const email = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+          
+          const matchesPost = !selectedPostId || rowPostId === selectedPostId;
+          const matchesSearch = !searchTerm || 
+            commentText.includes(searchTerm) || 
+            authorName.includes(searchTerm) || 
+            postTitle.includes(searchTerm) ||
+            email.includes(searchTerm);
+          
+          if (matchesPost && matchesSearch) {
+            row.style.display = '';
+            visibleCount++;
+          } else {
+            row.style.display = 'none';
+          }
+        });
+        
+        // Update counters
+        updateCounters(visibleCount, totalCount);
+        
+        // Handle empty state
+        handleEmptyState(visibleCount, selectedPostId, searchTerm);
+      }
+      
+      // Handle empty state
+      function handleEmptyState(visibleCount, postId, searchTerm) {
+        const existingEmptyState = tableBody.querySelector('.empty-state-row');
+        if (existingEmptyState) {
+          existingEmptyState.remove();
+        }
+        
+        if (visibleCount === 0 && (postId || searchTerm)) {
+          const emptyRow = document.createElement('tr');
+          emptyRow.className = 'empty-state-row';
+          emptyRow.innerHTML = `
+            <td colspan="8" class="px-4 py-12 text-center">
+              <div class="flex flex-col items-center gap-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.35-4.35"/>
+                </svg>
+                <div>
+                  <h3 class="text-lg font-medium text-gray-900 mb-1">No comments found</h3>
+                  <p class="text-sm text-gray-500">Try adjusting your filters to see more results.</p>
+                </div>
+              </div>
+            </td>
+          `;
+          tableBody.appendChild(emptyRow);
+        }
+      }
+      
+      // Debounced filter function
+      function debouncedFilter() {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(performFilter, 300);
+      }
+      
+      // Event listeners
+      postFilter.addEventListener('change', performFilter);
+      commentSearch.addEventListener('input', debouncedFilter);
+      
+      // Initialize
+      updateCounters(commentRows.length, commentRows.length);
+    });
+  </script>
+  
+  @vite(['resources/css/app.css', 'resources/js/app.js'])
 </body>
 </html>

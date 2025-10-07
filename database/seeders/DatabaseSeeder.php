@@ -11,10 +11,11 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      */
     public function run()
-{
-    $this->call([
-        CategorySeeder::class,
-        AdminSeeder::class,
-    ]);
+    {
+        $this->call([
+            CategorySeeder::class,
+            AdminSeeder::class,
+            AuthorUserSeeder::class,
+        ]);
 }
 }

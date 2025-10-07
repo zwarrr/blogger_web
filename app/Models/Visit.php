@@ -1,0 +1,93 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Visit extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'visit_id',
+        'author_name',
+        'author_id',
+        'auditor_name',
+        'auditor_id',
+        'assigned_to',
+        'location_address',
+        'latitude',
+        'longitude',
+        'status',
+        'notes',
+        'report_notes',
+        'photos',
+        'selfie_photo',
+        'selfie_latitude',
+        'selfie_longitude',
+        'visit_date',
+        'visit_purpose',
+        'created_by',
+        'completed_at'
+    ];
+
+    protected $casts = [
+        'visit_date' => 'datetime',
+        'completed_at' => 'datetime',
+        'photos' => 'array'
+    ];
+
+    public function auditor()
+    {
+        return $this->belongsTo(Auditor::class, 'auditor_id', 'id')->withDefault([
+            'name' => $this->auditor_name ?? 'Unknown Auditor',
+            'email' => 'No email'
+        ]);
+    }
+
+    public function author()
+    {
+        return $this->belongsTo(Author::class, 'author_id', 'id')->withDefault([
+            'name' => $this->author_name ?? 'Unknown Author',
+            'email' => 'No email'
+        ]);
+    }
+
+    public function visitReport()
+    {
+        return $this->hasOne(VisitReport::class, 'visit_id', 'id');
+    }
+
+    public static function generateVisitId()
+    {
+        do {
+            $visitId = 'VIS-' . date('Ymd') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        } while (self::where('visit_id', $visitId)->exists());
+        
+        return $visitId;
+    }
+
+    public function getStatusLabelAttribute()
+    {
+        $labels = [
+            'belum_dikunjungi' => ['text' => 'Belum Dikunjungi', 'class' => 'badge-secondary'],
+            'dalam_perjalanan' => ['text' => 'Dalam Perjalanan', 'class' => 'badge-info'],
+            'sedang_dikunjungi' => ['text' => 'Sedang Dikunjungi', 'class' => 'badge-primary'],
+            'menunggu_acc' => ['text' => 'Menunggu ACC', 'class' => 'badge-warning'],
+            'selesai' => ['text' => 'Selesai', 'class' => 'badge-success'],
+        ];
+        
+        return $labels[$this->status] ?? ['text' => ucfirst($this->status), 'class' => 'badge-secondary'];
+    }
+
+    public function getFormattedVisitDateAttribute()
+    {
+        return $this->visit_date ? $this->visit_date->format('d M Y H:i') : '-';
+    }
+
+    public function canBeReported()
+    {
+        return in_array($this->status, ['accepted', 'dalam_perjalanan', 'sedang_dikunjungi']);
+    }
+}

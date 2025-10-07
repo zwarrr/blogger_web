@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Post;
 use App\Models\Comment;
 use App\Models\Category;
-use App\Models\User;
+use App\Models\Admin;
+use App\Models\Auditor;
+use App\Models\Author;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -20,7 +22,7 @@ class AdminDashboardController extends Controller
         $totalPosts = Post::count();
         $totalComments = Comment::count();
         $totalCategories = Category::count();
-        $totalUsers = User::count();
+        $totalUsers = Admin::count() + Auditor::count() + Author::count();
 
         // Posts by day for last 7 days
         $start = Carbon::today()->subDays(6)->startOfDay();

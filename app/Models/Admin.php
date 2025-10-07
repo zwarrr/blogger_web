@@ -11,6 +11,10 @@ class Admin extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $table = 'admins';
+    
+    // Use default 'id' as primary key (auto-increment)
+    protected $primaryKey = 'id';
+    public $incrementing = true;
 
     protected $fillable = [
         'admin_id',

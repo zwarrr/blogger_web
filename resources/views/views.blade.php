@@ -7,8 +7,10 @@
   <meta name="theme-color" content="#EA580C" />
   <title>Berita | Blogger</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
   @vite(['resources/css/app.css'])
+  <link rel="icon" href="{{ asset('img/b.svg') }}" type="image/svg+xml">
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -155,10 +157,12 @@
         stroke-dasharray: 1, 150;
         stroke-dashoffset: 0;
       }
+
       50% {
         stroke-dasharray: 90, 150;
         stroke-dashoffset: -35;
       }
+
       100% {
         stroke-dasharray: 90, 150;
         stroke-dashoffset: -124;
@@ -183,8 +187,13 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     /* Smooth section scroll */
@@ -258,7 +267,7 @@
       transform: translateY(0) !important;
       visibility: visible !important;
     }
-    
+
     /* Ensure main content is visible */
     main {
       opacity: 1 !important;
@@ -333,8 +342,15 @@
 
     /* Card bounce effect */
     @keyframes cardBounce {
-      0%, 100% { transform: translateY(-12px) scale(1.03); }
-      50% { transform: translateY(-14px) scale(1.03); }
+
+      0%,
+      100% {
+        transform: translateY(-12px) scale(1.03);
+      }
+
+      50% {
+        transform: translateY(-14px) scale(1.03);
+      }
     }
 
     .card-hover:hover {
@@ -343,12 +359,19 @@
 
     /* Bounce animation for statistics */
     @keyframes bounce-gentle {
-      0%, 20%, 50%, 80%, 100% {
+
+      0%,
+      20%,
+      50%,
+      80%,
+      100% {
         transform: translateY(0);
       }
+
       40% {
         transform: translateY(-4px);
       }
+
       60% {
         transform: translateY(-2px);
       }
@@ -363,9 +386,11 @@
       0% {
         box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.4);
       }
+
       70% {
         box-shadow: 0 0 0 10px rgba(234, 88, 12, 0);
       }
+
       100% {
         box-shadow: 0 0 0 0 rgba(234, 88, 12, 0);
       }
@@ -380,9 +405,11 @@
       0% {
         background-position: 0% 50%;
       }
+
       50% {
         background-position: 100% 50%;
       }
+
       100% {
         background-position: 0% 50%;
       }
@@ -421,11 +448,10 @@
   </script>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="dns-prefetch" href="https://cdn.tailwindcss.com" />
-  <link rel="icon" href="/favicon.ico" />
 </head>
 
 <body class="bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50 text-gray-800 antialiased fade-in-page">
-  
+
 
 
   <!-- Page Transition Overlay (Hidden by default) -->
@@ -439,13 +465,24 @@
   <!-- Partikel Layer -->
   <div id="particles-js"></div>
 
+
 <!-- Top Bar -->
 <header class="bg-white/90 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-50 shadow-sm">
   <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-    <a href="{{ route('user.views') }}" class="flex items-center gap-2 page-link no-underline">
+    <a href="{{ route('user.views') }}" class="flex items-center gap-2 no-underline">
       <span
         class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white font-bold shadow-md">B</span>
       <span class="text-lg font-bold text-gray-900">Blogger</span>
+    </a>
+    
+    <a href="{{ route('login') }}" 
+      class="inline-flex items-center gap-2 text-white bg-brand-600 hover:bg-brand-700 px-6 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5 ripple btn-press">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+        <polyline points="10 17 15 12 10 7"></polyline>
+        <line x1="15" y1="12" x2="3" y2="12"></line>
+      </svg>
+      Masuk
     </a>
   </div>
 </header>
@@ -515,7 +552,7 @@
               </svg>
             </a>
             <a href="https://www.blogger.com/about"
-              class="inline-flex items-center gap-2 text-brand-600 bg-white hover:bg-gray-50 px-8 py-4 rounded-xl text-base font-semibold border-2 border-brand-600 transition-all hover:shadow-md ripple btn-press page-link">
+              class="inline-flex items-center gap-2 text-brand-600 bg-white hover:bg-gray-50 px-8 py-4 rounded-xl text-base font-semibold border-2 border-brand-600 transition-all hover:shadow-md ripple btn-press">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -551,7 +588,7 @@
               </div>
             </div>
 
-            <div class="absolute bottom-12 -right-6 bg-white rounded-2xl px-4 py-3 shadow-xl bounce-gentle" 
+            <div class="absolute bottom-12 -right-6 bg-white rounded-2xl px-4 py-3 shadow-xl bounce-gentle"
               style="animation-delay: 1s;">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center pulse-subtle">
@@ -600,11 +637,10 @@
           <div class="absolute inset-0 card-overlay rounded-2xl pointer-events-none z-10"></div>
           <!-- Card Shimmer Effect -->
           <div class="absolute inset-0 card-shimmer rounded-2xl z-20"></div>
-          
+
           <div class="relative h-48 overflow-hidden">
             <img src="{{ $post->thumbnail ?? $post->cover_image ?? 'https://via.placeholder.com/600x300?text=No+Cover' }}"
-              alt="{{ $post->title }}"
-              class="w-full h-full object-cover card-image">
+              alt="{{ $post->title }}" class="w-full h-full object-cover card-image">
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
             @if($post->category)
               <div
@@ -627,10 +663,12 @@
           </div>
           <div class="p-5 flex flex-col flex-1 card-content relative z-20">
             <div class="flex-1">
-              <h3 class="text-base font-bold text-gray-900 clamp-2 group-hover:text-brand-600 transition-all duration-300 group-hover:scale-105 mb-3">
+              <h3
+                class="text-base font-bold text-gray-900 clamp-2 group-hover:text-brand-600 transition-all duration-300 group-hover:scale-105 mb-3">
                 {{ $post->title }}
               </h3>
-              <p class="text-gray-600 text-sm clamp-3 group-hover:text-gray-700 transition-colors duration-300">{{ Str::limit(strip_tags($post->content), 120) }}</p>
+              <p class="text-gray-600 text-sm clamp-3 group-hover:text-gray-700 transition-colors duration-300">
+                {{ Str::limit(strip_tags($post->content), 120) }}</p>
             </div>
             <div class="mt-5 flex items-center justify-between">
               <span class="inline-flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
@@ -644,10 +682,11 @@
                 <span class="font-medium">{{ optional($post->created_at)->format('d M Y') }}</span>
               </span>
               <a href="{{ route('user.detail', $post->id) }}"
-                class="inline-flex items-center gap-1.5 text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-all hover:shadow-lg group-hover:shadow-brand-300 group-hover:scale-105 ripple btn-press page-link">
+                class="inline-flex items-center gap-1.5 text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-all hover:shadow-lg group-hover:shadow-brand-300 group-hover:scale-105 ripple btn-press">
                 Baca
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform group-hover:translate-x-1"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                   <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
@@ -766,10 +805,10 @@
   </script>
 
 
-  
+
   <!-- Enhanced Animation System -->
   @vite(['resources/js/animations-fixed.js', 'resources/js/loading-fix.js'])
-  
+
   <!-- AJAX untuk tracking pembaca aktif -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {

@@ -13,7 +13,7 @@ class AuthorDashboardController extends Controller
 {
     public function index()
     {
-        $authorName = Auth::user()->name;
+        $authorName = auth('web')->user()->name;
 
         // KPI metrics
         $totalPosts = Post::where('author', $authorName)->count();

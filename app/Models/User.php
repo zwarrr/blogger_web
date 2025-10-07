@@ -46,4 +46,36 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Get visits where user is auditor
+     */
+    public function visits()
+    {
+        return $this->hasMany(Visit::class, 'auditor_id');
+    }
+
+    /**
+     * Get visits where user is author
+     */
+    public function authoredVisits()
+    {
+        return $this->hasMany(Visit::class, 'author_id');
+    }
+
+    /**
+     * Get visits received by this author (alias for better readability)
+     */
+    public function visitsReceived()
+    {
+        return $this->hasMany(Visit::class, 'author_id');
+    }
+
+    /**
+     * Get posts written by this user (for authors)
+     */
+    public function posts()
+    {
+        return $this->hasMany(Post::class, 'author', 'name');
+    }
 }

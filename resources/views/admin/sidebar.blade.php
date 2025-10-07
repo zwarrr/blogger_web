@@ -8,7 +8,7 @@
     <h1 class="text-xl font-semibold text-gray-800">Blogger Admin</h1>
   </div>
 
-  @php($displayName = auth('admin')->user()->name ?? null)
+  @php($displayName = auth()->user()->name ?? null)
 
   <!-- Navigation -->
   <nav class="flex flex-col space-y-4 text-sm font-medium">
@@ -27,6 +27,32 @@
     <a href="{{ route('admin.comments.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.comments*') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a4 4 0 01-4 4H7l-4 4V7a4 4 0 014-4h10a4 4 0 014 4v8z"/></svg>
       Manage Comment
+    </a>
+    
+    <!-- Visit Management Section -->
+    <div class="mt-6 mb-3">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4">Kunjungan Author</h3>
+    </div>
+    <a href="{{ route('admin.visits.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.visits.index') || request()->routeIs('admin.visits.show') || request()->routeIs('admin.visits.edit') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      Daftar Kunjungan
+    </a>
+    <a href="{{ route('admin.visits.create') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.visits.create') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+      Tambah Kunjungan
+    </a>
+    <a href="{{ route('admin.visits.map') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.visits.map') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Peta Kunjungan
+    </a>
+    
+    <!-- Reports Section -->
+    <div class="mt-6 mb-3">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4">Laporan & Statistik</h3>
+    </div>
+    <a href="{{ route('admin.visits.reports') }}" class="flex items-center gap-3 px-4 py-2 rounded-md transition {{ request()->routeIs('admin.visits.reports') ? 'bg-orange-100 text-orange-700 font-semibold' : 'hover:bg-gray-200 text-gray-700' }}">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Statistik Kunjungan
     </a>
   </nav>
 
@@ -69,7 +95,7 @@
           <span class="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Soon</span>
         </a>
         <div class="border-t border-gray-100 my-2"></div>
-        <form method="POST" action="{{ route('admin.logout') }}" class="px-4 py-2">
+        <form method="POST" action="{{ route('auth.logout') }}" class="px-4 py-2">
           @csrf
           <button type="submit" class="flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded transition-colors">
             <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>

@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login | Bloggerp</title>
+  <title>Login | Blogger</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="{{ asset('img/b.svg') }}" type="image/svg+xml">
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -58,47 +59,50 @@
       @endif
 
       <!-- Form -->
-      <form class="space-y-5" method="POST" action="{{ route('auth.login.post') }}">
+      <form class="space-y-4" method="POST" action="{{ route('auth.login.submit') }}">
         @csrf
 
         <!-- Email -->
-        <div class="relative">
-          <input name="email" type="email" placeholder="Email address" value="{{ old('email') }}"
-            class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition" />
-          <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20 4H4a2 2 0 0 0-2 2v1.2l10 5.8 10-5.8V6a2 2 0 0 0-2-2z"/><path d="M22 8.3l-10 5.8-10-5.8V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8.3z"/>
-            </svg>
-          </span>
+        <div>
+          <label for="email" class="block text-sm font-medium text-orange-700 mb-1">Email</label>
+          <input id="email" name="email" type="email" required
+            class="w-full px-4 py-2 rounded-lg border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+            placeholder="example@example.com" value="{{ old('email') }}" />
+          @error('email')
+            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+          @enderror
         </div>
 
         <!-- Password -->
-        <div class="relative">
-          <input id="password" name="password" type="password" placeholder="Password"
-            class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition" />
-          <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-5 8a2 2 0 1 1 2-2 2 2 0 0 1-2 2zm-3-8V7a3 3 0 0 1 6 0v2z"/>
-            </svg>
-          </span>
+        <div>
+          <label for="password" class="block text-sm font-medium text-orange-700 mb-1">Password</label>
+          <input id="password" name="password" type="password" required
+            class="w-full px-4 py-2 rounded-lg border border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+            placeholder="********" />
+          @error('password')
+            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+          @enderror
         </div>
 
         <!-- Options -->
-        <div class="flex items-center justify-between text-sm">
+        <div class="flex items-center justify-start text-sm mt-4">
           <label class="flex items-center gap-2 text-gray-600">
             <input name="remember" type="checkbox" class="rounded text-orange-600 focus:ring-orange-500">
             Remember me
           </label>
-          <!-- No user forgot password/registration for now -->
-          <span class="text-gray-400">&nbsp;</span>
         </div>
 
         <!-- Login Button -->
         <button type="submit"
-          class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-md transition">
+          class="w-full py-2 bg-orange-600 text-white rounded-lg font-semibold text-lg shadow-md hover:bg-orange-800 transition">
           Login
         </button>
       </form>
+
+      <p class="mt-6 text-sm text-center text-gray-600">
+        Belum memiliki akun?
+        <a href="{{ route('auth.register') }}" class="text-orange-700 font-semibold hover:underline">Daftar sebagai Author</a>
+      </p>
       
     </div>
 

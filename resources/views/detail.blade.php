@@ -7,6 +7,7 @@
   <title>{{ $post->title }} | Blogger</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="{{ asset('img/b.svg') }}" type="image/svg+xml">
   <style> 
     body { font-family: 'Inter', sans-serif; }
     .article-content { 
@@ -160,39 +161,7 @@
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50 text-gray-800 antialiased lg:overflow-hidden lg:h-screen fade-in-page">
   
-  <script>
-    // Initial loading for detail page (auto-hide)
-    (function() {
-      const initialLoading = document.createElement('div');
-      initialLoading.id = 'initialDetailLoading';
-      initialLoading.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:linear-gradient(135deg,#1a1a1a,#2d2d2d,#1a1a1a);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
-      initialLoading.innerHTML = `
-        <div style="width:80px;height:80px;border:4px solid #333;border-top:4px solid #FF5722;border-radius:50%;animation:spin 1s linear infinite"></div>
-        <p style="color:#FFCCBC;font-size:18px;font-weight:600;margin-top:20px">loadinggg......</p>
-        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-      `;
-      document.body.appendChild(initialLoading);
-      
-      // Auto-hide with multiple triggers
-      const hideInitial = () => {
-        if (initialLoading.parentNode) {
-          initialLoading.style.opacity = '0';
-          initialLoading.style.transition = 'opacity 0.3s';
-          setTimeout(() => initialLoading.remove(), 300);
-        }
-      };
-      
-      // Hide on DOM ready
-      if (document.readyState !== 'loading') {
-        setTimeout(hideInitial, 100);
-      } else {
-        document.addEventListener('DOMContentLoaded', hideInitial, { once: true });
-      }
-      
-      // Force hide after 2 seconds
-      setTimeout(hideInitial, 2000);
-    })();
-  </script>
+
 
   <!-- Page Transition Overlay (Hidden by default) -->
   <div class="page-transition" id="pageTransition" style="opacity: 0; visibility: hidden; pointer-events: none; display: none;">
@@ -212,13 +181,12 @@
   </div>
   <header class="bg-white/90 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-50 shadow-sm">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="{{ route('user.views') }}" class="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700 transition-all hover:-translate-x-1 duration-200 page-link">
+      <a href="{{ route('user.views') }}" class="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700 transition-all hover:-translate-x-1 duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
         <span>Kembali</span>
       </a>
-      </div>
     </div>
   </header>
 
@@ -504,7 +472,7 @@
   </main>
 
   <!-- Enhanced Animation System -->
-  @vite(['resources/js/animations.js'])
+  @vite(['resources/js/animations-fixed.js', 'resources/js/loading-fix.js'])
 
 </body>
 </html>

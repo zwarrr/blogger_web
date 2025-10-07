@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Author;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -40,12 +40,17 @@ class AuthorAuthController extends Controller
             return redirect()->intended('/admin/dashboard');
         }
 
-        // Try author login
+        // Try user login (author/auditor)
         if (Auth::attempt(['email' => $email, 'password' => $password], $request->boolean('remember'))) {
             $request->session()->regenerate();
-            if (Auth::user()->role === 'author') {
+            $user = Auth::user();
+            
+            if ($user->role === 'author') {
                 return redirect()->intended('/author/dashboard');
+            } elseif ($user->role === 'auditor') {
+                return redirect()->intended('/auditor/dashboard');
             }
+            
             Auth::logout();
         }
 

@@ -44,6 +44,14 @@ return [
             'driver' => 'session',
             'provider' => 'admins',
         ],
+        'auditor' => [
+            'driver' => 'session',
+            'provider' => 'auditors',
+        ],
+        'author' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
     ],
 
     /*
@@ -74,10 +82,15 @@ return [
             'model' => App\Models\Admin::class,
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'auditors' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Auditor::class,
+        ],
+
+        'authors' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Author::class,
+        ],
     ],
 
     /*

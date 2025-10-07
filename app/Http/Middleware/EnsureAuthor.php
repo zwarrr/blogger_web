@@ -11,7 +11,7 @@ class EnsureAuthor
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() || Auth::user()->role !== 'author') {
+        if (!auth('web')->check() || auth('web')->user()->role !== 'author') {
             return redirect()->route('auth.login');
         }
         return $next($request);
