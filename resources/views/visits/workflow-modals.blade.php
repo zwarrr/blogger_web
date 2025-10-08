@@ -54,22 +54,63 @@
 }
 
 #map {
-    border: 2px solid #e5e7eb;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    height: 160px !important;
+    height: 192px !important; /* h-48 = 12rem = 192px */
     width: 100% !important;
     display: block !important;
-    background-color: #f3f4f6;
+    background-color: #f9fafb;
     position: relative;
     z-index: 1;
+    border: none !important;
+    border-radius: 0 !important;
 }
 
+/* Map container enhancements */
+#mapContainer .leaflet-container {
+    border-radius: 0 !important;
+}
+
+/* Coordinates display styling */
 #coordinatesDisplay {
-    background-color: rgba(59, 130, 246, 0.1);
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    border: 1px solid #dbeafe;
+    word-break: break-all;
+    line-height: 1.3;
+}
+
+/* GPS status indicator */
+#gpsStatus {
+    transition: all 0.3s ease;
+}
+
+/* Leaflet control positioning adjustments */
+.leaflet-top.leaflet-right {
+    top: 45px !important;
+    right: 10px !important;
+}
+
+.leaflet-control-zoom {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+}
+
+/* Loading animation for map */
+#map.loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin-left: -20px;
+    margin-top: -20px;
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 1000;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>
 
@@ -332,20 +373,71 @@
                             </p>
                         </div>
                         
-                        <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
-                            <div class="flex">
-                                <svg class="w-5 h-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                                </svg>
-                                <div class="text-sm text-blue-700 w-full">
-                                    <p class="font-medium">Informasi GPS</p>
-                                    <p>Koordinat lokasi akan direkam otomatis saat menyimpan.</p>
-                                    <p id="gpsStatus" class="mt-1 text-xs"></p>
-                                    
-                                    <!-- Map Container -->
-                                    <div id="mapContainer" class="mt-3">
-                                        <div id="map" class="w-full h-40 rounded border bg-gray-100"></div>
-                                        <p id="coordinatesDisplay" class="text-xs mt-1 text-blue-600 font-mono"></p>
+                        <!-- GPS Information Card -->
+                        <div class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                            <!-- GPS Info Header with Icon -->
+                            <div class="flex items-center mb-3">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-900">Informasi GPS</h4>
+                                    <p class="text-xs text-gray-500">Koordinat lokasi akan direkam otomatis saat menyimpan.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- GPS Status Indicator -->
+                            <div class="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                    <span class="text-sm text-green-700 font-medium">GPS Aktif</span>
+                                </div>
+                                <div class="text-xs text-green-600">
+                                    Akurasi ±60m
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Interactive Map Container -->
+                        <div id="mapContainer" class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                            <!-- Map Header -->
+                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        <h4 class="text-sm font-medium text-gray-900">Lokasi Kunjungan</h4>
+                                    </div>
+                                    <div id="gpsStatus" class="text-xs text-gray-500">
+                                        Mendeteksi lokasi...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Map Display Area -->
+                            <div class="relative bg-gray-100 h-48">
+                                <div id="map" class="w-full h-full"></div>
+                                
+                                <!-- Coordinates Display Overlay -->
+                                <div class="absolute bottom-2 left-2 right-2">
+                                    <div class="bg-white bg-opacity-95 backdrop-blur-sm px-3 py-2 rounded-md shadow-sm border border-gray-200">
+                                        <div class="text-xs text-gray-600">
+                                            <div class="font-medium mb-1">Koordinat GPS:</div>
+                                            <div id="coordinatesDisplay" class="font-mono text-gray-800">
+                                                Memuat koordinat...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Map Controls -->
+                                <div class="absolute top-2 right-2">
+                                    <div class="bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-medium text-gray-700 border border-gray-300 shadow-sm">
+                                        📍 Live GPS
                                     </div>
                                 </div>
                             </div>
@@ -568,12 +660,16 @@ function initializeGPSAndMap(form) {
     }
     
     // Show loading on map
-    gpsStatus.textContent = 'Menginisialisasi peta...';
-    coordinatesDisplay.textContent = 'Memuat koordinat GPS...';
+    gpsStatus.innerHTML = 'Menginisialisasi peta...';
+    coordinatesDisplay.innerHTML = 'Memuat koordinat GPS...';
+    
+    // Add loading class to map
+    mapDiv.classList.add('loading');
     
     // Wait for Leaflet to be ready
     if (typeof L === 'undefined') {
         console.error('Leaflet not loaded yet, retrying...');
+        gpsStatus.innerHTML = 'Memuat pustaka peta...';
         setTimeout(() => initializeGPSAndMap(form), 1000);
         return;
     }
@@ -593,30 +689,39 @@ function initializeGPSAndMap(form) {
         }
         
         // Ensure map div is ready
-        mapDiv.style.height = '160px';
+        mapDiv.style.height = '192px';
         mapDiv.style.width = '100%';
         
         // Create new map
         console.log('Creating Leaflet map...');
         visitMap = L.map('map', {
             center: [defaultLat, defaultLng],
-            zoom: 10,
-            zoomControl: true
+            zoom: 12,
+            zoomControl: true,
+            attributionControl: false
         });
         
         console.log('Map created, adding tiles...');
         
-        // Add OpenStreetMap tiles
+        // Add OpenStreetMap tiles with better styling
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
+            attribution: false,
+            maxZoom: 19,
+            className: 'map-tiles'
         }).addTo(visitMap);
         
+        // Remove loading class
+        mapDiv.classList.remove('loading');
+        
         // Add loading indicator to map
-        const loadingMarker = L.marker([defaultLat, defaultLng])
-            .addTo(visitMap)
-            .bindPopup('📍 Mencari lokasi Anda...')
-            .openPopup();
+        const loadingMarker = L.marker([defaultLat, defaultLng], {
+            icon: L.divIcon({
+                className: 'loading-marker',
+                html: '<div style="background: #3b82f6; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; white-space: nowrap;">� Mencari lokasi...</div>',
+                iconSize: [120, 30],
+                iconAnchor: [60, 15]
+            })
+        }).addTo(visitMap);
             
         console.log('Map initialized successfully');
         
@@ -624,7 +729,7 @@ function initializeGPSAndMap(form) {
         
         // Get real GPS coordinates
         if (navigator.geolocation) {
-            gpsStatus.textContent = 'Mengambil koordinat GPS real-time...';
+            gpsStatus.innerHTML = 'Mengambil koordinat GPS...';
             
             navigator.geolocation.getCurrentPosition(
                 function(position) {
@@ -633,6 +738,10 @@ function initializeGPSAndMap(form) {
                     const accuracy = position.coords.accuracy;
                     
                     console.log(`GPS obtained: ${lat}, ${lng} (accuracy: ${accuracy}m)`);
+                    
+                    // Update status with clean text
+                    gpsStatus.innerHTML = `GPS berhasil dideteksi`;
+                    coordinatesDisplay.innerHTML = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
                     
                     // Remove existing coordinate inputs if any
                     const existingLatInput = form.querySelector('input[name="selfie_latitude"]');
@@ -659,68 +768,149 @@ function initializeGPSAndMap(form) {
                     // Remove loading marker
                     visitMap.removeLayer(loadingMarker);
                     
-                    // Add real location marker
-                    visitMarker = L.marker([lat, lng])
-                        .addTo(visitMap)
-                        .bindPopup(`
-                            📍 <strong>Lokasi Kunjungan</strong><br>
-                            Lat: ${lat.toFixed(6)}<br>
-                            Lng: ${lng.toFixed(6)}<br>
-                            Akurasi: ~${Math.round(accuracy)}m
-                        `)
-                        .openPopup();
+                    // Add clean location marker
+                    visitMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: `
+                                <div style="
+                                    position: relative;
+                                    background: #ef4444;
+                                    color: white;
+                                    padding: 4px 8px;
+                                    border-radius: 12px;
+                                    font-size: 11px;
+                                    font-weight: 500;
+                                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                                    border: 2px solid white;
+                                    white-space: nowrap;
+                                ">
+                                    📍 Lokasi Anda
+                                    <div style="
+                                        position: absolute;
+                                        bottom: -4px;
+                                        left: 50%;
+                                        transform: translateX(-50%);
+                                        width: 0;
+                                        height: 0;
+                                        border-left: 4px solid transparent;
+                                        border-right: 4px solid transparent;
+                                        border-top: 4px solid #ef4444;
+                                    "></div>
+                                </div>
+                            `,
+                            iconSize: [140, 40],
+                            iconAnchor: [70, 40]
+                        })
+                    }).addTo(visitMap);
                     
                     // Add accuracy circle
                     L.circle([lat, lng], {
-                        color: 'blue',
-                        fillColor: '#blue',
+                        radius: accuracy,
+                        fillColor: '#3b82f6',
                         fillOpacity: 0.1,
-                        radius: accuracy
+                        color: '#2563eb',
+                        opacity: 0.4,
+                        weight: 2,
+                        dashArray: '5, 5'
                     }).addTo(visitMap);
                     
-                    // Update status and coordinates display
-                    gpsStatus.textContent = '✅ GPS berhasil diambil';
-                    coordinatesDisplay.textContent = 
-                        `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${Math.round(accuracy)}m)`;
+                    // Add pulse animation marker at center
+                    L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'pulse-marker',
+                            html: `
+                                <div style="
+                                    width: 12px;
+                                    height: 12px;
+                                    background: #ef4444;
+                                    border-radius: 50%;
+                                    border: 3px solid white;
+                                    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3);
+                                    animation: pulse 2s infinite;
+                                "></div>
+                                <style>
+                                    @keyframes pulse {
+                                        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+                                        70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+                                        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+                                    }
+                                </style>
+                            `,
+                            iconSize: [18, 18],
+                            iconAnchor: [9, 9]
+                        })
+                    }).addTo(visitMap);
                     
                     console.log('GPS and map updated successfully');
                 },
                 function(error) {
                     console.error('GPS Error:', error);
                     
-                    // Remove loading marker
-                    visitMap.removeLayer(loadingMarker);
+                    // Update status with error message
+                    gpsStatus.innerHTML = 'GPS tidak tersedia';
+                    coordinatesDisplay.innerHTML = 'Koordinat akan digunakan dari default';
                     
-                    let errorMsg = '❌ GPS Error: ';
+                    // Remove loading marker
+                    if (loadingMarker) {
+                        visitMap.removeLayer(loadingMarker);
+                    }
+                    
+                    let errorMsg = '';
                     let detailMsg = '';
                     
                     switch(error.code) {
                         case error.PERMISSION_DENIED:
-                            errorMsg += 'Izin GPS ditolak';
+                            errorMsg = 'Izin GPS ditolak';
                             detailMsg = 'Mohon izinkan akses lokasi pada browser';
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            errorMsg += 'Posisi tidak tersedia';
+                            errorMsg = 'Posisi tidak tersedia';
                             detailMsg = 'Pastikan GPS aktif dan sinyal baik';
                             break;
                         case error.TIMEOUT:
-                            errorMsg += 'Timeout mengambil GPS';
+                            errorMsg = 'Timeout GPS';
                             detailMsg = 'Coba lagi dalam beberapa saat';
                             break;
                         default:
-                            errorMsg += 'Error tidak dikenal';
+                            errorMsg = 'Error GPS';
                             detailMsg = 'Silakan refresh halaman';
                             break;
                     }
                     
-                    gpsStatus.textContent = errorMsg;
-                    coordinatesDisplay.textContent = detailMsg;
+                    gpsStatus.innerHTML = errorMsg;
+                    coordinatesDisplay.innerHTML = detailMsg;
                     
-                    // Add error marker
-                    L.marker([defaultLat, defaultLng])
-                        .addTo(visitMap)
-                        .bindPopup(`❌ ${errorMsg}<br>${detailMsg}`)
-                        .openPopup();
+                    // Add error marker with clean styling
+                    L.marker([defaultLat, defaultLng], {
+                        icon: L.divIcon({
+                            className: 'error-marker',
+                            html: `
+                                <div style="
+                                    background: #ef4444;
+                                    color: white;
+                                    padding: 4px 8px;
+                                    border-radius: 12px;
+                                    font-size: 11px;
+                                    font-weight: 500;
+                                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                                    border: 2px solid white;
+                                    white-space: nowrap;
+                                ">
+                                    ❌ GPS Error
+                                </div>
+                            `,
+                            iconSize: [80, 28],
+                            iconAnchor: [40, 28]
+                        })
+                    }).addTo(visitMap)
+                    .bindPopup(`
+                        <div style="text-align: center;">
+                            <strong>${errorMsg}</strong><br>
+                            <small>${detailMsg}</small>
+                        </div>
+                    `)
+                    .openPopup();
                 },
                 {
                     enableHighAccuracy: true,
@@ -729,15 +919,37 @@ function initializeGPSAndMap(form) {
                 }
             );
         } else {
-            gpsStatus.textContent = '❌ GPS tidak didukung browser';
-            coordinatesDisplay.textContent = 'Browser tidak mendukung geolocation';
+            gpsStatus.innerHTML = 'GPS tidak didukung';
+            coordinatesDisplay.innerHTML = 'Browser tidak mendukung geolocation';
             
             // Add error marker
-            visitMap.removeLayer(loadingMarker);
-            L.marker([defaultLat, defaultLng])
-                .addTo(visitMap)
-                .bindPopup('❌ GPS tidak didukung browser')
-                .openPopup();
+            if (loadingMarker) {
+                visitMap.removeLayer(loadingMarker);
+            }
+            L.marker([defaultLat, defaultLng], {
+                icon: L.divIcon({
+                    className: 'error-marker',
+                    html: `
+                        <div style="
+                            background: #ef4444;
+                            color: white;
+                            padding: 4px 8px;
+                            border-radius: 12px;
+                            font-size: 11px;
+                            font-weight: 500;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                            border: 2px solid white;
+                            white-space: nowrap;
+                        ">
+                            🚫 GPS Tidak Tersedia
+                        </div>
+                    `,
+                    iconSize: [120, 28],
+                    iconAnchor: [60, 28]
+                })
+            }).addTo(visitMap)
+            .bindPopup('🚫 Browser tidak mendukung GPS')
+            .openPopup();
         }
         
     } catch (error) {
