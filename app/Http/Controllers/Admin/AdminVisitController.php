@@ -262,12 +262,37 @@ class AdminVisitController extends Controller
                 ->withInput();
         }
 
+        // Find corresponding user ID for assigned_to foreign key
+        $assignedToUserId = null;
+        
+        // First try to find user by matching email with auditor
+        if ($auditor->email) {
+            $correspondingUser = User::where('email', $auditor->email)->first();
+            if ($correspondingUser) {
+                $assignedToUserId = $correspondingUser->id;
+                \Log::info('Found corresponding user by email: ' . $correspondingUser->id);
+            }
+        }
+        
+        // If no user found by email, try to find any auditor role user
+        if (!$assignedToUserId) {
+            $anyAuditorUser = User::where('role', 'auditor')->first();
+            if ($anyAuditorUser) {
+                $assignedToUserId = $anyAuditorUser->id;
+                \Log::info('Using fallback auditor user: ' . $anyAuditorUser->id);
+            }
+        }
+        
+        // If still no user found, set to null (field is nullable)
+        if (!$assignedToUserId) {
+            \Log::warning('No corresponding user found for auditor assignment, setting assigned_to to null');
+        }
+
         // Prepare visit data
         $visitData = [
-            'visit_id' => Visit::generateVisitId(),
             'author_name' => $author->name,
             'auditor_name' => $auditor->name,
-            'assigned_to' => $auditor->id, // Use auditor ID directly
+            'assigned_to' => $assignedToUserId, // Use users table ID for foreign key
             'location_address' => $author->address ?? ($author->alamat ?? 'Alamat akan diverifikasi oleh auditor'),
             'visit_date' => $request->tanggal_kunjungan,
             'visit_purpose' => $request->tujuan,

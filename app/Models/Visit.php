@@ -49,6 +49,17 @@ class Visit extends Model
         'photos' => 'array'
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($visit) {
+            if (empty($visit->visit_id)) {
+                $visit->visit_id = self::generateVisitId();
+            }
+        });
+    }
+
     public function auditor()
     {
         return $this->belongsTo(User::class, 'auditor_id', 'id')->withDefault([
@@ -72,11 +83,20 @@ class Visit extends Model
 
     public static function generateVisitId()
     {
-        do {
-            $visitId = 'VIS-' . date('Ymd') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
-        } while (self::where('visit_id', $visitId)->exists());
+        // Get the last visit ID number
+        $lastVisit = self::whereNotNull('visit_id')
+                        ->where('visit_id', 'LIKE', 'VIST%')
+                        ->orderBy('visit_id', 'desc')
+                        ->first();
         
-        return $visitId;
+        if ($lastVisit && preg_match('/VIST(\d+)/', $lastVisit->visit_id, $matches)) {
+            $lastNumber = (int) $matches[1];
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        return 'VIST' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
     public function getStatusLabelAttribute()

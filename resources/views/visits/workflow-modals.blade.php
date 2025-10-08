@@ -48,6 +48,24 @@
 #captureCanvas {
     transform: scaleX(1) !important;
 }
+
+/* Map styling */
+#mapContainer {
+    transition: all 0.3s ease;
+}
+
+#map {
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+#coordinatesDisplay {
+    background-color: rgba(59, 130, 246, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dbeafe;
+}
 </style>
 
 <!-- Reschedule Visit Modal -->
@@ -320,9 +338,9 @@
                                     <p id="gpsStatus" class="mt-1 text-xs"></p>
                                     
                                     <!-- Map Container -->
-                                    <div id="mapContainer" class="mt-3 hidden">
-                                        <div id="map" class="w-full h-32 rounded border"></div>
-                                        <p id="coordinatesDisplay" class="text-xs mt-1 text-blue-600"></p>
+                                    <div id="mapContainer" class="mt-3">
+                                        <div id="map" class="w-full h-40 rounded border bg-gray-100"></div>
+                                        <p id="coordinatesDisplay" class="text-xs mt-1 text-blue-600 font-mono"></p>
                                     </div>
                                 </div>
                             </div>
@@ -468,14 +486,17 @@ function resetModalState() {
     }
     
     // Reset GPS and map
-    const mapContainer = document.getElementById('mapContainer');
     const gpsStatus = document.getElementById('gpsStatus');
     const coordinatesDisplay = document.getElementById('coordinatesDisplay');
     
-    if (mapContainer) {
-        mapContainer.classList.add('hidden');
-        // Clear map div
-        document.getElementById('map').innerHTML = '';
+    // Clean up map instance
+    if (visitMap) {
+        visitMap.remove();
+        visitMap = null;
+    }
+    
+    if (visitMarker) {
+        visitMarker = null;
     }
     
     if (gpsStatus) {
@@ -484,6 +505,12 @@ function resetModalState() {
     
     if (coordinatesDisplay) {
         coordinatesDisplay.textContent = '';
+    }
+    
+    // Clear map div content
+    const mapDiv = document.getElementById('map');
+    if (mapDiv) {
+        mapDiv.innerHTML = '';
     }
 }
 
@@ -512,89 +539,172 @@ function completeVisit(visitId) {
     // Initialize camera functionality immediately
     initializeCameraControls();
     
-    // Get GPS coordinates
-    if (navigator.geolocation) {
-        document.getElementById('gpsStatus').textContent = 'Mengambil koordinat GPS...';
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                // Remove existing coordinate inputs if any
-                const existingLatInput = form.querySelector('input[name="selfie_latitude"]');
-                const existingLngInput = form.querySelector('input[name="selfie_longitude"]');
-                if (existingLatInput) existingLatInput.remove();
-                if (existingLngInput) existingLngInput.remove();
-                
-                // Add hidden inputs for coordinates
-                let latInput = document.createElement('input');
-                latInput.type = 'hidden';
-                latInput.name = 'selfie_latitude';
-                latInput.value = lat;
-                form.appendChild(latInput);
-                
-                let lngInput = document.createElement('input');
-                lngInput.type = 'hidden';
-                lngInput.name = 'selfie_longitude';
-                lngInput.value = lng;
-                form.appendChild(lngInput);
-                
-                // Update GPS status
-                document.getElementById('gpsStatus').textContent = 'Koordinat GPS berhasil diambil';
-                
-                // Show coordinates
-                document.getElementById('coordinatesDisplay').textContent = 
-                    `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
-                
-                // Show and initialize map
-                const mapContainer = document.getElementById('mapContainer');
-                mapContainer.classList.remove('hidden');
-                
-                // Initialize Leaflet map
-                const map = L.map('map').setView([lat, lng], 15);
-                
-                // Add OpenStreetMap tiles
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
-                
-                // Add marker for current position
-                L.marker([lat, lng])
-                    .addTo(map)
-                    .bindPopup(`Lokasi Kunjungan<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`)
-                    .openPopup();
-                
-                console.log('GPS and map initialized successfully');
-            },
-            function(error) {
-                document.getElementById('gpsStatus').textContent = 'Tidak dapat mengambil koordinat GPS';
-                console.error('GPS Error:', error);
-                
-                let errorMsg = 'GPS Error: ';
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMsg += 'Izin GPS ditolak';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMsg += 'Posisi tidak tersedia';
-                        break;
-                    case error.TIMEOUT:
-                        errorMsg += 'Timeout mengambil GPS';
-                        break;
-                    default:
-                        errorMsg += 'Error tidak dikenal';
-                        break;
+    // Initialize map immediately with default view
+    initializeGPSAndMap(form);
+}
+
+// Global variable for map instance
+let visitMap = null;
+let visitMarker = null;
+
+function initializeGPSAndMap(form) {
+    const mapContainer = document.getElementById('mapContainer');
+    const gpsStatus = document.getElementById('gpsStatus');
+    const coordinatesDisplay = document.getElementById('coordinatesDisplay');
+    
+    // Show loading on map
+    gpsStatus.textContent = 'Menginisialisasi peta...';
+    coordinatesDisplay.textContent = 'Memuat koordinat GPS...';
+    
+    // Initialize map with default Indonesia center
+    const defaultLat = -6.2088;
+    const defaultLng = 106.8456; // Jakarta coordinates as default
+    
+    try {
+        // Clear existing map if any
+        if (visitMap) {
+            visitMap.remove();
+        }
+        
+        // Create new map
+        visitMap = L.map('map').setView([defaultLat, defaultLng], 10);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(visitMap);
+        
+        // Add loading indicator to map
+        const loadingMarker = L.marker([defaultLat, defaultLng])
+            .addTo(visitMap)
+            .bindPopup('📍 Mencari lokasi Anda...')
+            .openPopup();
+        
+        console.log('Map initialized, getting GPS coordinates...');
+        
+        // Get real GPS coordinates
+        if (navigator.geolocation) {
+            gpsStatus.textContent = 'Mengambil koordinat GPS real-time...';
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+                    
+                    console.log(`GPS obtained: ${lat}, ${lng} (accuracy: ${accuracy}m)`);
+                    
+                    // Remove existing coordinate inputs if any
+                    const existingLatInput = form.querySelector('input[name="selfie_latitude"]');
+                    const existingLngInput = form.querySelector('input[name="selfie_longitude"]');
+                    if (existingLatInput) existingLatInput.remove();
+                    if (existingLngInput) existingLngInput.remove();
+                    
+                    // Add hidden inputs for coordinates
+                    let latInput = document.createElement('input');
+                    latInput.type = 'hidden';
+                    latInput.name = 'selfie_latitude';
+                    latInput.value = lat;
+                    form.appendChild(latInput);
+                    
+                    let lngInput = document.createElement('input');
+                    lngInput.type = 'hidden';
+                    lngInput.name = 'selfie_longitude';
+                    lngInput.value = lng;
+                    form.appendChild(lngInput);
+                    
+                    // Update map to real coordinates
+                    visitMap.setView([lat, lng], 16);
+                    
+                    // Remove loading marker
+                    visitMap.removeLayer(loadingMarker);
+                    
+                    // Add real location marker
+                    visitMarker = L.marker([lat, lng])
+                        .addTo(visitMap)
+                        .bindPopup(`
+                            📍 <strong>Lokasi Kunjungan</strong><br>
+                            Lat: ${lat.toFixed(6)}<br>
+                            Lng: ${lng.toFixed(6)}<br>
+                            Akurasi: ~${Math.round(accuracy)}m
+                        `)
+                        .openPopup();
+                    
+                    // Add accuracy circle
+                    L.circle([lat, lng], {
+                        color: 'blue',
+                        fillColor: '#blue',
+                        fillOpacity: 0.1,
+                        radius: accuracy
+                    }).addTo(visitMap);
+                    
+                    // Update status and coordinates display
+                    gpsStatus.textContent = '✅ GPS berhasil diambil';
+                    coordinatesDisplay.textContent = 
+                        `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${Math.round(accuracy)}m)`;
+                    
+                    console.log('GPS and map updated successfully');
+                },
+                function(error) {
+                    console.error('GPS Error:', error);
+                    
+                    // Remove loading marker
+                    visitMap.removeLayer(loadingMarker);
+                    
+                    let errorMsg = '❌ GPS Error: ';
+                    let detailMsg = '';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg += 'Izin GPS ditolak';
+                            detailMsg = 'Mohon izinkan akses lokasi pada browser';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg += 'Posisi tidak tersedia';
+                            detailMsg = 'Pastikan GPS aktif dan sinyal baik';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg += 'Timeout mengambil GPS';
+                            detailMsg = 'Coba lagi dalam beberapa saat';
+                            break;
+                        default:
+                            errorMsg += 'Error tidak dikenal';
+                            detailMsg = 'Silakan refresh halaman';
+                            break;
+                    }
+                    
+                    gpsStatus.textContent = errorMsg;
+                    coordinatesDisplay.textContent = detailMsg;
+                    
+                    // Add error marker
+                    L.marker([defaultLat, defaultLng])
+                        .addTo(visitMap)
+                        .bindPopup(`❌ ${errorMsg}<br>${detailMsg}`)
+                        .openPopup();
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 30000
                 }
-                document.getElementById('gpsStatus').textContent = errorMsg;
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 60000
-            }
-        );
-    } else {
-        document.getElementById('gpsStatus').textContent = 'GPS tidak didukung browser';
+            );
+        } else {
+            gpsStatus.textContent = '❌ GPS tidak didukung browser';
+            coordinatesDisplay.textContent = 'Browser tidak mendukung geolocation';
+            
+            // Add error marker
+            visitMap.removeLayer(loadingMarker);
+            L.marker([defaultLat, defaultLng])
+                .addTo(visitMap)
+                .bindPopup('❌ GPS tidak didukung browser')
+                .openPopup();
+        }
+        
+    } catch (error) {
+        console.error('Map initialization error:', error);
+        gpsStatus.textContent = '❌ Error menginisialisasi peta';
+        coordinatesDisplay.textContent = 'Silakan refresh halaman';
     }
 }
 
