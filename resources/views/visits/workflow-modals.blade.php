@@ -27,10 +27,7 @@
 }
 
 #cameraArea video {
-    di        } finally {
-            // Reset button state quickly
-            this.disabled = false;
-        }k !important;
+    display: block !important;
     min-height: 256px !important;
     max-height: 256px !important;
     border: 1px solid #d1d5db;
@@ -52,12 +49,20 @@
 /* Map styling */
 #mapContainer {
     transition: all 0.3s ease;
+    display: block !important;
+    visibility: visible !important;
 }
 
 #map {
     border: 2px solid #e5e7eb;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    height: 160px !important;
+    width: 100% !important;
+    display: block !important;
+    background-color: #f3f4f6;
+    position: relative;
+    z-index: 1;
 }
 
 #coordinatesDisplay {
@@ -548,13 +553,32 @@ let visitMap = null;
 let visitMarker = null;
 
 function initializeGPSAndMap(form) {
+    console.log('initializeGPSAndMap called');
+    
     const mapContainer = document.getElementById('mapContainer');
     const gpsStatus = document.getElementById('gpsStatus');
     const coordinatesDisplay = document.getElementById('coordinatesDisplay');
+    const mapDiv = document.getElementById('map');
+    
+    console.log('Map elements found:', { mapContainer, gpsStatus, coordinatesDisplay, mapDiv });
+    
+    if (!mapContainer || !mapDiv) {
+        console.error('Map container or map div not found!');
+        return;
+    }
     
     // Show loading on map
     gpsStatus.textContent = 'Menginisialisasi peta...';
     coordinatesDisplay.textContent = 'Memuat koordinat GPS...';
+    
+    // Wait for Leaflet to be ready
+    if (typeof L === 'undefined') {
+        console.error('Leaflet not loaded yet, retrying...');
+        setTimeout(() => initializeGPSAndMap(form), 1000);
+        return;
+    }
+    
+    console.log('Leaflet is ready, initializing map...');
     
     // Initialize map with default Indonesia center
     const defaultLat = -6.2088;
@@ -563,11 +587,24 @@ function initializeGPSAndMap(form) {
     try {
         // Clear existing map if any
         if (visitMap) {
+            console.log('Removing existing map');
             visitMap.remove();
+            visitMap = null;
         }
         
+        // Ensure map div is ready
+        mapDiv.style.height = '160px';
+        mapDiv.style.width = '100%';
+        
         // Create new map
-        visitMap = L.map('map').setView([defaultLat, defaultLng], 10);
+        console.log('Creating Leaflet map...');
+        visitMap = L.map('map', {
+            center: [defaultLat, defaultLng],
+            zoom: 10,
+            zoomControl: true
+        });
+        
+        console.log('Map created, adding tiles...');
         
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -580,6 +617,8 @@ function initializeGPSAndMap(form) {
             .addTo(visitMap)
             .bindPopup('📍 Mencari lokasi Anda...')
             .openPopup();
+            
+        console.log('Map initialized successfully');
         
         console.log('Map initialized, getting GPS coordinates...');
         
@@ -705,6 +744,17 @@ function initializeGPSAndMap(form) {
         console.error('Map initialization error:', error);
         gpsStatus.textContent = '❌ Error menginisialisasi peta';
         coordinatesDisplay.textContent = 'Silakan refresh halaman';
+        
+        // Show fallback content
+        mapDiv.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 160px; background-color: #f9fafb; border: 2px dashed #d1d5db; border-radius: 0.5rem; color: #6b7280;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗺️</div>
+                    <div style="font-size: 0.875rem;">Map Loading Error</div>
+                    <div style="font-size: 0.75rem; margin-top: 0.25rem;">GPS will still work</div>
+                </div>
+            </div>
+        `;
     }
 }
 
@@ -1125,6 +1175,13 @@ function showNotification(message, type = 'info') {
 // Initialize event listeners when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing camera controls');
+    
+    // Check if Leaflet is loaded
+    if (typeof L !== 'undefined') {
+        console.log('Leaflet loaded successfully');
+    } else {
+        console.error('Leaflet not loaded!');
+    }
     
     // Setup camera event listeners immediately
     setupCameraEventListeners();
