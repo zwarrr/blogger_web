@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Visit;
 use App\Models\VisitReport;
 use App\Models\User;
+use App\Services\VisitManagementService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
@@ -231,5 +232,38 @@ class AuditorVisitController extends Controller
             'completedVisits',
             'monthlyStats'
         ));
+    }
+
+    /**
+     * Complete a visit with selfie and audit notes
+     */
+    public function complete(Request $request, Visit $visit)
+    {
+        // Validate required fields
+        $request->validate([
+            'notes' => 'required|string|min:10|max:2000',
+            'selfie_photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
+            'selfie_latitude' => 'nullable|numeric|between:-90,90',
+            'selfie_longitude' => 'nullable|numeric|between:-180,180',
+            'photos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // Additional photos
+        ], [
+            'notes.required' => 'Catatan/keterangan audit harus diisi',
+            'notes.min' => 'Catatan minimal 10 karakter',
+            'notes.max' => 'Catatan maksimal 2000 karakter',
+            'selfie_photo.required' => 'Foto selfie harus diambil',
+            'selfie_photo.image' => 'File harus berupa gambar',
+            'selfie_photo.mimes' => 'Format foto harus JPEG, PNG, atau JPG',
+            'selfie_photo.max' => 'Ukuran foto maksimal 5MB',
+        ]);
+
+        try {
+            $visitManagementService = new VisitManagementService();
+            $result = $visitManagementService->completeVisit($visit, $request, Auth::user());
+            
+            return redirect()->back()->with('success', $result['message']);
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 }

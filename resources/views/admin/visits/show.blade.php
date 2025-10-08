@@ -78,26 +78,30 @@
                                         </button>
                                     </div>
                                     
-                                    <!-- Status Update Modal -->
-                                    <div x-show="open" @click.away="open = false" x-transition class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-                                        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                                            <h3 class="text-lg font-semibold mb-4">Ubah Status Kunjungan</h3>
-                                            <form id="statusForm">
-                                                @csrf
-                                                <div class="mb-4">
-                                                    <label class="block text-sm font-medium text-gray-700 mb-2">Status Baru</label>
-                                                    <select name="status" x-model="currentStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-                                                        <option value="pending">Menunggu</option>
-                                                        <option value="konfirmasi">Dikonfirmasi</option>
-                                                        <option value="selesai">Selesai</option>
-                                                    </select>
-                                                </div>
-                                                <div class="mb-4">
-                                                    <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
-                                                    <textarea name="notes" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Catatan untuk perubahan status..."></textarea>
-                                                </div>
-                                                <div class="flex justify-end gap-3">
-                                                    <button type="button" @click="open = false" class="px-4 py-2 text-gray-600 hover:text-gray-800">Batal</button>
+                                    <!-- Status Display Only (No Manual Change) -->
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <h4 class="text-sm font-medium text-gray-700 mb-2">Status Workflow</h4>
+                                        @php
+                                            $statusTexts = [
+                                                'pending' => 'Menunggu Konfirmasi Author',
+                                                'confirmed' => 'Siap Diproses Auditor',
+                                                'in_progress' => 'Sedang Diproses Auditor',
+                                                'completed' => 'Selesai oleh Auditor',
+                                                'cancelled' => 'Dibatalkan',
+                                            ];
+                                            $statusClasses = [
+                                                'pending' => 'bg-yellow-100 text-yellow-800',
+                                                'confirmed' => 'bg-blue-100 text-blue-800',
+                                                'in_progress' => 'bg-purple-100 text-purple-800',
+                                                'completed' => 'bg-green-100 text-green-800',
+                                                'cancelled' => 'bg-red-100 text-red-800',
+                                            ];
+                                        @endphp
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ $statusClasses[$visit->status] ?? 'bg-gray-100 text-gray-800' }}">
+                                            {{ $statusTexts[$visit->status] ?? ucfirst(str_replace('_', ' ', $visit->status)) }}
+                                        </span>
+                                        <p class="text-xs text-gray-500 mt-2">Status dikelola otomatis berdasarkan aksi Author dan Auditor</p>
+                                    </div>
                                                     <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">Simpan</button>
                                                 </div>
                                             </form>

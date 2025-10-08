@@ -237,19 +237,20 @@
     };
 
     // Include visit scripts after DOM is ready
+    // Initialize visit system when page loads
     document.addEventListener('DOMContentLoaded', function() {
-        // Load visit modal script
-        if (!document.getElementById('visitModal')) {
-            const modalScript = document.createElement('script');
-            modalScript.src = '{{ asset("js/visit-modal.js") }}';
-            document.head.appendChild(modalScript);
-        }
-        
-        // Load visit table script
-        const tableScript = document.createElement('script');
-        tableScript.src = '{{ asset("js/visit-table.js") }}';
-        document.head.appendChild(tableScript);
+        console.log('Visit management system loaded');
     });
 </script>
 @endpush
+
+@push('scripts')
+@vite([
+    'resources/js/visit-modal-manager.js',
+    'resources/js/visit-camera-system.js'
+])
+@endpush
+
+<!-- Include Workflow Modals -->
+@include('visits.workflow-modals')
 @endsection

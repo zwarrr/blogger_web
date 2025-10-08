@@ -4,26 +4,159 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
             <label class="text-sm font-medium text-gray-600">Author</label>
-            <div class="font-medium text-gray-900">{{ $visit->author->name }}</div>
-            <div class="text-sm text-gray-500">{{ $visit->author->email }}</div>
+            <div class="font-medium text-gray-900">{{ $visit->author->name ?? $visit->author_name ?? 'Unknown Author' }}</div>
+            <div class="text-sm text-gray-500">{{ $visit->author->email ?? 'No email' }}</div>
         </div>
         <div>
             <label class="text-sm font-medium text-gray-600">Auditor</label>
-            <div class="font-medium text-gray-900">{{ $visit->auditor->name }}</div>
-            <div class="text-sm text-gray-500">{{ $visit->auditor->email }}</div>
+            <div class="font-medium text-gray-900">{{ $visit->auditor->name ?? $visit->auditor_name ?? 'Unknown Auditor' }}</div>
+            <div class="text-sm text-gray-500">{{ $visit->auditor->email ?? 'No email' }}</div>
         </div>
         <div>
             <label class="text-sm font-medium text-gray-600">Tanggal Kunjungan</label>
-            <div class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($visit->tanggal_kunjungan)->format('d M Y') }}</div>
-            <div class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($visit->tanggal_kunjungan)->format('H:i') }} WIB</div>
+            <div class="font-medium text-gray-900">{{ $visit->visit_date ? $visit->visit_date->format('d M Y') : 'No Date' }}</div>
+            <div class="text-sm text-gray-500">{{ $visit->visit_date ? $visit->visit_date->format('H:i') : '-' }} WIB</div>
+            @if($visit->reschedule_count > 0)
+                <div class="text-xs text-orange-600 mt-1">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        Diundur {{ $visit->reschedule_count }}x
+                    </span>
+                </div>
+            @endif
         </div>
     </div>
     
-    <div class="mt-4">
-        <label class="text-sm font-medium text-gray-600">Tujuan Kunjungan</label>
-        <div class="mt-1 text-gray-900">{{ $visit->tujuan }}</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div>
+            <label class="text-sm font-medium text-gray-600">Tujuan Kunjungan</label>
+            <div class="mt-1 text-gray-900">{{ $visit->visit_purpose ?? 'No purpose specified' }}</div>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-gray-600">Status</label>
+            <div class="mt-1">
+                @php
+                    $status = $visit->status_label;
+                @endphp
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $status['class'] ?? 'bg-gray-100 text-gray-800' }}">
+                    {{ $status['text'] ?? ucfirst($visit->status) }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    @if($visit->confirmed_at)
+        <div class="mt-4">
+            <label class="text-sm font-medium text-gray-600">Waktu Konfirmasi</label>
+            <div class="mt-1 text-gray-900">{{ $visit->confirmed_at->format('d M Y H:i') }} WIB</div>
+            @if($visit->confirmed_by)
+                <div class="text-sm text-gray-500">oleh {{ $visit->confirmed_by }}</div>
+            @endif
+        </div>
+    @endif
+    
+    @if($visit->started_at)
+        <div class="mt-4">
+            <label class="text-sm font-medium text-gray-600">Waktu Mulai Proses</label>
+            <div class="mt-1 text-gray-900">{{ $visit->started_at->format('d M Y H:i') }} WIB</div>
+        </div>
+    @endif
+    
+    @if($visit->completed_at)
+        <div class="mt-4">
+            <label class="text-sm font-medium text-gray-600">Waktu Selesai</label>
+            <div class="mt-1 text-gray-900">{{ $visit->completed_at->format('d M Y H:i') }} WIB</div>
+        </div>
+    @endif
+</div>
+
+<!-- Auditor Notes (New Workflow) -->
+@if($visit->auditor_notes)
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <h4 class="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Catatan Auditor
+    </h4>
+    <div class="text-gray-800 whitespace-pre-line">{{ $visit->auditor_notes }}</div>
+</div>
+@endif
+
+<!-- Selfie and GPS Information (New Workflow) -->
+@if($visit->selfie_photo || ($visit->selfie_latitude && $visit->selfie_longitude))
+<div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+    <h4 class="font-semibold text-green-900 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+        Bukti Kehadiran
+    </h4>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        @if($visit->selfie_photo)
+        <div>
+            <label class="text-sm font-medium text-gray-600">Foto Selfie</label>
+            <div class="mt-2">
+                <img src="{{ Storage::url($visit->selfie_photo) }}" 
+                     alt="Selfie Auditor" 
+                     class="max-w-full h-auto max-h-64 rounded-lg border border-gray-300 object-cover">
+            </div>
+        </div>
+        @endif
+        
+        @if($visit->selfie_latitude && $visit->selfie_longitude)
+        <div>
+            <label class="text-sm font-medium text-gray-600">Koordinat GPS</label>
+            <div class="mt-2 space-y-1">
+                <div class="text-sm">
+                    <span class="font-medium">Latitude:</span> {{ $visit->selfie_latitude }}
+                </div>
+                <div class="text-sm">
+                    <span class="font-medium">Longitude:</span> {{ $visit->selfie_longitude }}
+                </div>
+                <a href="https://maps.google.com/?q={{ $visit->selfie_latitude }},{{ $visit->selfie_longitude }}" 
+                   target="_blank" 
+                   class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                    Lihat di Google Maps
+                </a>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
+@endif
+
+<!-- Additional Photos (New Workflow) -->
+@if($visit->photos && count($visit->photos) > 0)
+<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+    <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        Foto Tambahan ({{ count($visit->photos) }})
+    </h4>
+    
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        @foreach($visit->photos as $index => $photo)
+        <div class="relative group">
+            <img src="{{ Storage::url($photo) }}" 
+                 alt="Foto {{ $index + 1 }}" 
+                 class="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                 onclick="openPhotoModal('{{ Storage::url($photo) }}')">
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                </svg>
+            </div>
+        </div>
+        @endforeach
+    </div>
+</div>
+@endif
 
 @if($visit->visitReport)
     <!-- Visit Report -->
@@ -218,3 +351,33 @@
         @endif
     </div>
 @endif
+
+<!-- Photo Modal -->
+<div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center" onclick="closePhotoModal()">
+    <div class="relative max-w-4xl max-h-full p-4">
+        <img id="photoModalImage" src="" alt="Photo" class="max-w-full max-h-full object-contain">
+        <button onclick="closePhotoModal()" class="absolute top-4 right-4 text-white hover:text-gray-300">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<script>
+function openPhotoModal(photoUrl) {
+    document.getElementById('photoModalImage').src = photoUrl;
+    document.getElementById('photoModal').classList.remove('hidden');
+}
+
+function closePhotoModal() {
+    document.getElementById('photoModal').classList.add('hidden');
+}
+
+// Close photo modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closePhotoModal();
+    }
+});
+</script>

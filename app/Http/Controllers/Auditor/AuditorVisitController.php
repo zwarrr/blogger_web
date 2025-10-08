@@ -23,7 +23,8 @@ class AuditorVisitController extends Controller
             return redirect()->route('login')->with('error', 'Please login to access this page.');
         }
         
-        $query = Visit::where('auditor_id', $auditor->id);
+        $query = Visit::query()
+                      ->where('auditor_name', $auditor->name);
 
         // Apply filters
         if ($request->filled('status_filter')) {
@@ -40,16 +41,16 @@ class AuditorVisitController extends Controller
         
         $visits = $query->orderBy('visit_date', 'desc')->paginate(15);
 
-        $statuses = ['belum_dikunjungi', 'dalam_perjalanan', 'sedang_dikunjungi', 'menunggu_acc', 'selesai'];
+        $statuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
         
         // Statistics for auditor
         $stats = [
             'total' => Visit::where('auditor_id', $auditor->id)->count(),
-            'belum_dikunjungi' => Visit::where('auditor_id', $auditor->id)->where('status', 'belum_dikunjungi')->count(),
-            'dalam_perjalanan' => Visit::where('auditor_id', $auditor->id)->where('status', 'dalam_perjalanan')->count(),
-            'sedang_dikunjungi' => Visit::where('auditor_id', $auditor->id)->where('status', 'sedang_dikunjungi')->count(),
-            'menunggu_acc' => Visit::where('auditor_id', $auditor->id)->where('status', 'menunggu_acc')->count(),
-            'selesai' => Visit::where('auditor_id', $auditor->id)->where('status', 'selesai')->count(),
+            'pending' => Visit::where('auditor_id', $auditor->id)->where('status', 'pending')->count(),
+            'confirmed' => Visit::where('auditor_id', $auditor->id)->where('status', 'confirmed')->count(),
+            'in_progress' => Visit::where('auditor_id', $auditor->id)->where('status', 'in_progress')->count(),
+            'completed' => Visit::where('auditor_id', $auditor->id)->where('status', 'completed')->count(),
+            'cancelled' => Visit::where('auditor_id', $auditor->id)->where('status', 'cancelled')->count(),
         ];
 
         // Check if this is an AJAX request for dynamic updates
@@ -69,13 +70,28 @@ class AuditorVisitController extends Controller
     public function show(Visit $visit)
     {
         // Check if the visit is assigned to current auditor
-        if ($visit->auditor_id !== Auth::id()) {
+        if ($visit->auditor_name !== Auth::user()->name) {
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
-        $visit->load(['author', 'visitReport']);
+        // Load removed - using name-based fields
 
         return view('auditor.visits.show', compact('visit'));
+    }
+
+    /**
+     * Show visit details via AJAX for modal
+     */
+    public function detail(Visit $visit)
+    {
+        // Check if the visit is assigned to current auditor
+        if ($visit->auditor_name !== Auth::user()->name) {
+            abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
+        }
+
+        // Load removed - using name-based fields
+
+        return view('visits.detail-modal', compact('visit'));
     }
 
     /**
@@ -84,7 +100,7 @@ class AuditorVisitController extends Controller
     public function createReport(Visit $visit)
     {
         // Check if the visit is assigned to current auditor
-        if ($visit->auditor_id !== Auth::id()) {
+        if ($visit->auditor_name !== Auth::user()->name) {
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
@@ -100,7 +116,7 @@ class AuditorVisitController extends Controller
                 ->with('info', 'Laporan untuk kunjungan ini sudah ada.');
         }
 
-        $visit->load('author');
+        // Load removed - using name-based fields
 
         return view('auditor.visits.create-report', compact('visit'));
     }
@@ -240,7 +256,7 @@ class AuditorVisitController extends Controller
                 ->with('error', 'Laporan untuk kunjungan ini belum dibuat.');
         }
 
-        $visit->load(['author', 'visitReport']);
+        // Load removed - using name-based fields
 
         return view('auditor.visits.show-report', compact('visit'));
     }
@@ -296,4 +312,192 @@ class AuditorVisitController extends Controller
 
         return view('auditor.visits.map', compact('visits'));
     }
+
+    /**
+     * Start visit process
+     */
+    public function startProcess(Visit $visit)
+    {
+        try {
+            \Log::info('AuditorVisitController::startProcess - Starting', [
+                'visit_id' => $visit->id,
+                'user_id' => Auth::id(),
+                'user_name' => Auth::user()->name ?? 'Unknown'
+            ]);
+
+            // Check if the visit is assigned to current auditor
+            if ($visit->auditor_name !== Auth::user()->name) {
+                \Log::warning('AuditorVisitController::startProcess - Access denied', [
+                    'visit_auditor' => $visit->auditor_name,
+                    'current_user' => Auth::user()->name
+                ]);
+                abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
+            }
+
+            if (!$visit->canBeStarted()) {
+                \Log::warning('AuditorVisitController::startProcess - Cannot be started', [
+                    'visit_status' => $visit->status
+                ]);
+                return back()->with('error', 'Kunjungan ini tidak dapat diproses. Pastikan sudah dikonfirmasi oleh Author terlebih dahulu.');
+            }
+
+            $visit->update([
+                'status' => 'in_progress',
+                'started_at' => now()
+            ]);
+
+            \Log::info('AuditorVisitController::startProcess - Success', [
+                'visit_id' => $visit->id,
+                'new_status' => $visit->fresh()->status
+            ]);
+
+            return back()->with('success', 'Proses kunjungan telah dimulai.');
+            
+        } catch (\Exception $e) {
+            \Log::error('AuditorVisitController::startProcess - Exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->with('error', 'Terjadi kesalahan saat memulai proses kunjungan.');
+        }
+    }
+
+    /**
+     * Complete visit with required information
+     */
+    public function complete(Request $request, Visit $visit)
+    {
+        try {
+            \Log::info('AuditorVisitController::complete - Starting', [
+                'visit_id' => $visit->id,
+                'user_id' => Auth::id(),
+                'user_name' => Auth::user()->name ?? 'Unknown'
+            ]);
+
+            // Check if the visit is assigned to current auditor
+            if ($visit->auditor_name !== Auth::user()->name) {
+                \Log::warning('AuditorVisitController::complete - Access denied', [
+                    'visit_auditor' => $visit->auditor_name,
+                    'current_user' => Auth::user()->name
+                ]);
+                abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
+            }
+
+            // Allow completion from both confirmed and in_progress status
+            if (!in_array($visit->status, ['confirmed', 'in_progress'])) {
+                \Log::warning('AuditorVisitController::complete - Cannot be completed', [
+                    'visit_status' => $visit->status
+                ]);
+                return back()->with('error', 'Kunjungan ini tidak dapat diselesaikan. Pastikan sudah dikonfirmasi oleh Author terlebih dahulu.');
+            }
+
+            $request->validate([
+                'auditor_notes' => 'required|string|max:1000',
+                'selfie_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'photos' => 'nullable|array|max:5',
+                'photos.*' => 'image|mimes:jpeg,png,jpg|max:2048'
+            ]);
+
+            // Store selfie photo with GPS coordinates if available
+            $selfiePath = null;
+            if ($request->hasFile('selfie_photo')) {
+                $selfiePath = $request->file('selfie_photo')->store('visits/selfies', 'public');  
+                \Log::info('AuditorVisitController::complete - Selfie uploaded', [
+                    'path' => $selfiePath
+                ]);
+            }
+
+            // Store additional photos
+            $photoPaths = [];
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $photo) {
+                    $photoPaths[] = $photo->store('visits/photos', 'public');
+                }
+                \Log::info('AuditorVisitController::complete - Additional photos uploaded', [
+                    'count' => count($photoPaths)
+                ]);
+            }
+
+            // Get GPS coordinates from request if available
+            $selfieLatitude = $request->input('selfie_latitude');
+            $selfieLongitude = $request->input('selfie_longitude');
+
+            // Prepare update data
+            $updateData = [
+                'status' => 'completed',
+                'completed_at' => now(),
+                'auditor_notes' => $request->auditor_notes,
+                'selfie_photo' => $selfiePath,
+                'selfie_latitude' => $selfieLatitude,
+                'selfie_longitude' => $selfieLongitude,
+                'photos' => array_merge($visit->photos ?? [], $photoPaths)
+            ];
+
+            // If coming from confirmed status, also set started_at
+            if ($visit->status === 'confirmed') {
+                $updateData['started_at'] = now();
+            }
+
+            $visit->update($updateData);
+
+            \Log::info('AuditorVisitController::complete - Visit completed successfully', [
+                'visit_id' => $visit->id,
+                'selfie_coordinates' => $selfieLatitude && $selfieLongitude ? "{$selfieLatitude},{$selfieLongitude}" : 'Not provided'
+            ]);
+
+            return back()->with('success', 'Kunjungan berhasil diselesaikan.');
+            
+        } catch (\Exception $e) {
+            \Log::error('AuditorVisitController::complete - Exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->with('error', 'Terjadi kesalahan saat menyelesaikan kunjungan.');
+        }
+    }
+
+    /**
+     * Display visit statistics for auditor
+     */
+    public function statistics()
+    {
+        try {
+            $auditor = Auth::user();
+            
+            if (!$auditor) {
+                return redirect()->route('login')->with('error', 'Please login to access this page.');
+            }
+
+            // Get statistics for the auditor
+            $stats = [
+                'total' => Visit::where('auditor_name', $auditor->name)->count(),
+                'pending' => Visit::where('auditor_name', $auditor->name)->where('status', 'pending')->count(),
+                'confirmed' => Visit::where('auditor_name', $auditor->name)->where('status', 'confirmed')->count(),
+                'in_progress' => Visit::where('auditor_name', $auditor->name)->where('status', 'in_progress')->count(),
+                'completed' => Visit::where('auditor_name', $auditor->name)->where('status', 'completed')->count(),
+                'cancelled' => Visit::where('auditor_name', $auditor->name)->where('status', 'cancelled')->count(),
+            ];
+
+            // Monthly statistics
+            $monthlyStats = Visit::where('auditor_name', $auditor->name)
+                ->selectRaw('MONTH(visit_date) as month, COUNT(*) as count')
+                ->whereYear('visit_date', date('Y'))
+                ->groupBy('month')
+                ->orderBy('month')
+                ->get();
+
+            return view('auditor.visits.statistics', compact('stats', 'monthlyStats'));
+            
+        } catch (\Exception $e) {
+            \Log::error('AuditorVisitController::statistics - Exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->with('error', 'Terjadi kesalahan saat memuat statistik.');
+        }
+    }
+
 }

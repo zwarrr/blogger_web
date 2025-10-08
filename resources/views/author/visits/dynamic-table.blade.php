@@ -4,6 +4,7 @@
 
 @push('head')
 <meta name="user-role" content="{{ auth()->user()->role }}">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 @endpush
 
 @section('content')
@@ -139,12 +140,10 @@
                             <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             
                             @if(auth()->user()->role === 'author')
-                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hasil</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sisa Undur</th>
                             @endif
                             
-                            @if(auth()->user()->role !== 'author')
-                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                            @endif
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="bg-white divide-y divide-gray-200">
@@ -264,21 +263,40 @@
             },
             
             showDetail(visitId) {
-                this.showModal = true;
-                
-                fetch(`${window.location.pathname}/${visitId}/detail`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
+                // Use the global viewVisit function which handles correct routes for each role
+                if (typeof viewVisit === 'function') {
+                    viewVisit(visitId);
+                } else {
+                    // Fallback - determine the correct route based on user role
+                    const userRole = document.querySelector('meta[name="user-role"]')?.getAttribute('content');
+                    let detailUrl;
+                    
+                    if (userRole === 'admin') {
+                        detailUrl = `/admin/visits/${visitId}`;
+                    } else if (userRole === 'author') {
+                        detailUrl = `/author/visits/${visitId}/detail`;
+                    } else if (userRole === 'auditor') {
+                        detailUrl = `/auditor/visits/${visitId}/detail`;
+                    } else {
+                        detailUrl = `/visits/${visitId}`;
                     }
-                })
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('modal-content').innerHTML = html;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('modal-content').innerHTML = '<p class="text-red-500">Error loading details</p>';
-                });
+                    
+                    this.showModal = true;
+                    
+                    fetch(detailUrl, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('modal-content').innerHTML = html;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('modal-content').innerHTML = '<p class="text-red-500">Error loading details</p>';
+                    });
+                }
             },
             
             closeModal() {
@@ -320,6 +338,12 @@
         if (!document.getElementById('visitModal')) {
             const modalScript = document.createElement('script');
             modalScript.src = '{{ asset("js/visit-modal.js") }}';
+            modalScript.onload = function() {
+                // Initialize modal after script loads
+                if (window.visitModal) {
+                    window.visitModal.init();
+                }
+            };
             document.head.appendChild(modalScript);
         }
         
@@ -329,4 +353,8 @@
         document.head.appendChild(tableScript);
     });
 </script>
+
+<!-- Include workflow modals -->
+@include('visits.workflow-modals')
+
 @endsection

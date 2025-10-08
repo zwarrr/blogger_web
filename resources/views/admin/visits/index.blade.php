@@ -65,60 +65,60 @@
                     </div>
                 </div>
 
-                <!-- Belum Dikunjungi -->
+                <!-- Pending -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-gray-600">Belum Dikunjungi</p>
-                            <p class="text-2xl font-bold text-gray-600 mt-2">{{ $stats['belum_dikunjungi'] ?? 0 }}</p>
-                            <p class="text-xs text-gray-500 mt-1">Belum dijalankan</p>
+                            <p class="text-sm font-medium text-gray-600">Menunggu Konfirmasi</p>
+                            <p class="text-2xl font-bold text-yellow-600 mt-2">{{ $stats['pending'] ?? 0 }}</p>
+                            <p class="text-xs text-gray-500 mt-1">Belum dikonfirmasi author</p>
                         </div>
-                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- Dalam Perjalanan -->
+                <!-- Confirmed -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-gray-600">Dalam Perjalanan</p>
-                            <p class="text-2xl font-bold text-blue-600 mt-2">{{ $stats['dalam_perjalanan'] ?? 0 }}</p>
-                            <p class="text-xs text-gray-500 mt-1">Sedang berlangsung</p>
+                            <p class="text-sm font-medium text-gray-600">Dikonfirmasi</p>
+                            <p class="text-2xl font-bold text-blue-600 mt-2">{{ $stats['confirmed'] ?? 0 }}</p>
+                            <p class="text-xs text-gray-500 mt-1">Siap diproses auditor</p>
                         </div>
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                             <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- Menunggu ACC -->
+                <!-- In Progress -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-gray-600">Menunggu ACC</p>
-                            <p class="text-2xl font-bold text-orange-600 mt-2">{{ $stats['menunggu_acc'] ?? 0 }}</p>
-                            <p class="text-xs text-gray-500 mt-1">Perlu persetujuan</p>
+                            <p class="text-sm font-medium text-gray-600">Sedang Proses</p>
+                            <p class="text-2xl font-bold text-purple-600 mt-2">{{ $stats['in_progress'] ?? 0 }}</p>
+                            <p class="text-xs text-gray-500 mt-1">Sedang dikerjakan auditor</p>
                         </div>
-                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7"/>
                             </svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- Selesai -->
+                <!-- Completed -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Selesai</p>
-                            <p class="text-2xl font-bold text-green-600 mt-2">{{ $stats['selesai'] ?? 0 }}</p>
+                            <p class="text-2xl font-bold text-green-600 mt-2">{{ $stats['completed'] ?? 0 }}</p>
                             <p class="text-xs text-gray-500 mt-1">Telah selesai</p>
                         </div>
                         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -280,6 +280,12 @@
         if (!document.getElementById('visitModal')) {
             const modalScript = document.createElement('script');
             modalScript.src = '{{ asset("js/visit-modal.js") }}';
+            modalScript.onload = function() {
+                // Initialize modal after script loads
+                if (window.visitModal) {
+                    window.visitModal.init();
+                }
+            };
             document.head.appendChild(modalScript);
         }
         
@@ -289,5 +295,9 @@
         document.head.appendChild(tableScript);
     });
 </script>
+
+<!-- Include workflow modals -->
+@include('visits.workflow-modals')
+
 @endpush
 @endsection

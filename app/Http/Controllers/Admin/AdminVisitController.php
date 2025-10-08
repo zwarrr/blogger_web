@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Visit;
 use App\Models\VisitReport;
 use App\Models\User;
 use App\Models\Author;
 use App\Models\Auditor;
+use App\Services\Admin\AdminVisitManagementService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
@@ -20,11 +22,12 @@ class AdminVisitController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Visit::with(['author', 'auditor', 'visitReport']);
+        try {
+            $query = Visit::query();
         
         // Apply filters
         if ($request->filled('auditor_filter')) {
-            $query->where('auditor_id', $request->auditor_filter);
+            $query->where('auditor_name', $request->auditor_filter);
         }
 
         if ($request->filled('status_filter')) {
@@ -38,9 +41,8 @@ class AdminVisitController extends Controller
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('author_name', 'like', '%' . $request->search . '%')
-                  ->orWhereHas('author', function($subQ) use ($request) {
-                      $subQ->where('name', 'like', '%' . $request->search . '%');
-                  });
+                  ->orWhere('auditor_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('notes', 'like', '%' . $request->search . '%');
             });
         }
         
@@ -70,6 +72,14 @@ class AdminVisitController extends Controller
         }
         
         return view('admin.visits.index', compact('visits', 'stats', 'authors', 'auditors', 'statuses'));
+        
+        } catch (\Exception $e) {
+            \Log::error('Error in admin visits index: ' . $e->getMessage(), [
+                'error' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->back()->withErrors(['error' => 'Terjadi kesalahan saat memuat halaman: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -171,109 +181,123 @@ class AdminVisitController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'author_id' => 'required|string',
-            'auditor_id' => 'required|string|exists:users,id',
-            'tanggal_kunjungan' => 'required|date|after_or_equal:today',
-            'tujuan' => 'required|string|max:1000',
-            'catatan_admin' => 'nullable|string|max:500',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'author_id' => 'required|string',
+                'auditor_id' => 'required|string', // Remove exists check since we handle both tables
+                'tanggal_kunjungan' => 'required|date|after_or_equal:today',
+                'tujuan' => 'required|string|max:1000',
+                'catatan_admin' => 'nullable|string|max:500',
+            ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
+            if ($validator->fails()) {
+                \Log::error('Validation failed for visit creation', [
+                    'errors' => $validator->errors()->toArray(),
+                    'input' => $request->all()
+                ]);
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
+            }
 
-        // Get author data - prioritize authors table due to foreign key constraint
+        // Get author data - prioritize authors table since form sends author IDs from there
         $author = null;
         $authorId = $request->author_id;
         
-        // First try authors table (required by foreign key)
+        \Log::info('Looking for author with ID: ' . $authorId);
+        
+        // Try authors table first (primary source since form uses these IDs)
         if (Schema::hasTable('authors')) {
-            $author = Author::find($authorId);
+            $authorModel = Author::find($authorId);
+            if ($authorModel) {
+                $author = $authorModel;
+                \Log::info('Found author in authors table: ' . $authorModel->name);
+            }
         }
         
-        // If not found, try users table but we'll need different handling
+        // Fallback to users table if not found in authors
         if (!$author) {
             $userAuthor = User::where('role', 'author')->find($authorId);
             if ($userAuthor) {
-                // Look for corresponding author in authors table by name or create mapping
-                $author = Author::where('name', $userAuthor->name)->first();
-                if (!$author) {
-                    return redirect()->back()
-                        ->withErrors(['author_id' => 'Author tidak ditemukan di tabel authors. Silakan pilih author yang valid.'])
-                        ->withInput();
-                }
-                $authorId = $author->id; // Use authors table ID
+                $author = $userAuthor;
+                \Log::info('Found author in users table: ' . $userAuthor->name);
             }
         }
         
         if (!$author) {
+            \Log::error('Author not found with ID: ' . $authorId);
             return redirect()->back()
                 ->withErrors(['author_id' => 'Author tidak ditemukan'])
                 ->withInput();
         }
 
-        // Get auditor data - prioritize auditors table due to foreign key constraint
+        // Get auditor data - prioritize auditors table since form sends auditor IDs from there
         $auditor = null;
         $auditorId = $request->auditor_id;
         
-        // First try auditors table (required by foreign key)
+        \Log::info('Looking for auditor with ID: ' . $auditorId);
+        
+        // Try auditors table first (primary source since form uses these IDs)
         if (Schema::hasTable('auditors')) {
-            $auditor = Auditor::find($auditorId);
+            $auditorModel = Auditor::find($auditorId);
+            if ($auditorModel) {
+                $auditor = $auditorModel;
+                \Log::info('Found auditor in auditors table: ' . $auditorModel->name);
+            }
         }
         
-        // If not found, try users table but we'll need different handling
+        // Fallback to users table if not found in auditors
         if (!$auditor) {
             $userAuditor = User::where('role', 'auditor')->find($auditorId);
             if ($userAuditor) {
-                // Look for corresponding auditor in auditors table by name or create mapping
-                $auditor = Auditor::where('name', $userAuditor->name)->first();
-                if (!$auditor) {
-                    return redirect()->back()
-                        ->withErrors(['auditor_id' => 'Auditor tidak ditemukan di tabel auditors. Silakan pilih auditor yang valid.'])
-                        ->withInput();
-                }
-                $auditorId = $auditor->id; // Use auditors table ID
+                $auditor = $userAuditor;
+                \Log::info('Found auditor in users table: ' . $userAuditor->name);
             }
         }
         
         if (!$auditor) {
+            \Log::error('Auditor not found with ID: ' . $auditorId);
             return redirect()->back()
                 ->withErrors(['auditor_id' => 'Auditor tidak valid'])
                 ->withInput();
         }
 
-        // Find corresponding user ID for assigned_to (foreign key to users table)
-        $assignedToUserId = null;
-        if ($auditor) {
-            // Look for user with same name as auditor
-            $correspondingUser = User::where('role', 'auditor')
-                ->where('name', $auditor->name)
-                ->first();
-            $assignedToUserId = $correspondingUser ? $correspondingUser->id : '1'; // Fallback to admin
-        }
-        
-        // Create visit assignment using the correct IDs for foreign keys
-        $visit = Visit::create([
+        // Prepare visit data
+        $visitData = [
             'visit_id' => Visit::generateVisitId(),
             'author_name' => $author->name,
             'auditor_name' => $auditor->name,
-            'author_id' => $authorId, // Use correct authors table ID
-            'auditor_id' => $auditorId, // Use correct auditors table ID
-            'assigned_to' => $assignedToUserId, // Use users table ID for this foreign key
-            'location_address' => $author->address ?? 'Alamat akan diverifikasi oleh auditor',
+            'assigned_to' => $auditor->id, // Use auditor ID directly
+            'location_address' => $author->address ?? ($author->alamat ?? 'Alamat akan diverifikasi oleh auditor'),
             'visit_date' => $request->tanggal_kunjungan,
             'visit_purpose' => $request->tujuan,
             'notes' => $request->catatan_admin,
-            'status' => 'pending', // New workflow starts with pending
+            'status' => 'belum_dikunjungi',
             'reschedule_count' => 0,
-            'created_by' => auth()->id() ?? '1',
-        ]);
+            'created_by' => Auth::id(),
+            'author_id' => $author->id, // Use the actual ID from the selected table
+            'auditor_id' => $auditor->id, // Use the actual ID from the selected table
+        ];
+        
+        \Log::info('Creating visit with data: ', $visitData);
+        
+        // Create visit assignment
+        $visit = Visit::create($visitData);
 
         return redirect()->route('admin.visits.index')
             ->with('success', 'Penugasan kunjungan berhasil dibuat dengan ID: ' . $visit->visit_id . ' dan ditugaskan kepada ' . $auditor->name);
+
+        } catch (\Exception $e) {
+            \Log::error('Error creating visit: ' . $e->getMessage(), [
+                'request_data' => $request->all(),
+                'user_id' => Auth::id(),
+                'error' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Terjadi kesalahan saat membuat kunjungan: ' . $e->getMessage()])
+                ->withInput();
+        }
     }
 
     /**
@@ -281,7 +305,7 @@ class AdminVisitController extends Controller
      */
     public function show(Visit $visit)
     {
-        $visit->load(['author', 'auditor', 'visitReport']);
+        // Load removed - using name-based fields
         
         return view('visits.detail-modal', compact('visit'));
     }

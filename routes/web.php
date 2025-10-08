@@ -11,12 +11,14 @@ use App\Http\Controllers\AdminCommentController;
 use App\Http\Controllers\Auth\AuthorAuthController;
 use App\Http\Controllers\AuthorDashboardController;
 use App\Http\Controllers\AuthorPostController;
-use App\Http\Controllers\AdminVisitController;
-use App\Http\Controllers\AdminVisitMapController;
-use App\Http\Controllers\AdminVisitReportController;
+use App\Http\Controllers\Admin\AdminVisitController;
+use App\Http\Controllers\Admin\AdminVisitMapController;
+use App\Http\Controllers\Admin\AdminVisitReportController;
 use App\Http\Controllers\AuditorDashboardController;
 use App\Http\Controllers\Auditor\AuditorVisitController;
+use App\Http\Controllers\Auditor\AuditorVisitActionController;
 use App\Http\Controllers\Author\AuthorVisitController;
+use App\Http\Controllers\Author\AuthorVisitActionController;
 use App\Http\Controllers\AuditorAuthController;
 use App\Http\Controllers\AuthController;
 
@@ -26,6 +28,8 @@ Route::get('/', [UserDashboardController::class, 'views'])->name('user.views');
 Route::get('/test-author-login', function () {
     return view('test-author-login');
 });
+
+
 
 Route::get('/authors-table-data', function () {
     $authors = App\Models\Author::orderBy('created_at', 'desc')->get();
@@ -85,7 +89,7 @@ Route::get('/author/login', function() {
 // Admin protected routes
 // (Authentication handled by unified auth system)
 
-Route::prefix('admin')->middleware(['admin'])->group(function () {
+Route::prefix('admin')->middleware(['web', 'admin'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/posts', [AdminPostController::class, 'index'])->name('admin.posts.index');
     Route::post('/posts', [AdminPostController::class, 'store'])->name('admin.posts.store');
@@ -119,6 +123,7 @@ Route::prefix('admin')->middleware(['admin'])->group(function () {
     Route::post('/visits/{visit}/reject-report', [AdminVisitController::class, 'rejectReport'])->name('admin.visits.reject-report');
     Route::delete('/visits/{visit}/photo/{photoIndex}', [AdminVisitController::class, 'removePhoto'])->name('admin.visits.photo.remove');
     Route::delete('/visits/{visit}', [AdminVisitController::class, 'destroy'])->name('admin.visits.destroy');
+    Route::patch('/visits/{visit}/cancel', [AdminVisitController::class, 'cancel'])->name('admin.visits.cancel');
 
     // Visit Map
     Route::get('/visits-map', [AdminVisitMapController::class, 'index'])->name('admin.visits.map');
@@ -128,32 +133,45 @@ Route::prefix('admin')->middleware(['admin'])->group(function () {
     Route::get('/visits-export', [AdminVisitReportController::class, 'export'])->name('admin.visits.export');
 });
 
-
-// Author area (requires logged-in author with role 'author')
-Route::prefix('author')->middleware(['author'])->group(function () {
+// Author protected routes
+Route::prefix('author')->middleware(['web', 'author'])->group(function () {
     Route::get('/dashboard', [AuthorDashboardController::class, 'index'])->name('author.dashboard');
-
-    // Manage author's own posts
+    
+    // Author Posts routes
     Route::get('/posts', [AuthorPostController::class, 'index'])->name('author.posts.index');
+    Route::get('/posts/create', [AuthorPostController::class, 'create'])->name('author.posts.create');
     Route::post('/posts', [AuthorPostController::class, 'store'])->name('author.posts.store');
-    Route::put('/posts/{id}', [AuthorPostController::class, 'update'])->name('author.posts.update');
-    Route::delete('/posts/{id}', [AuthorPostController::class, 'destroy'])->name('author.posts.destroy');
-
-    // Visit management for Authors
+    Route::get('/posts/{post}/edit', [AuthorPostController::class, 'edit'])->name('author.posts.edit');
+    Route::put('/posts/{post}', [AuthorPostController::class, 'update'])->name('author.posts.update');
+    Route::delete('/posts/{post}', [AuthorPostController::class, 'destroy'])->name('author.posts.destroy');
+    
+    // Author Visit routes
     Route::get('/visits', [AuthorVisitController::class, 'index'])->name('author.visits.index');
     Route::get('/visits/{visit}', [AuthorVisitController::class, 'show'])->name('author.visits.show');
+    Route::get('/visits/{visit}/detail', [AuthorVisitController::class, 'detail'])->name('author.visits.detail');
+    
+    // Author workflow routes
+    // Author Actions - New Logic Flow
+    Route::patch('/visits/{visit}/confirm', [AuthorVisitActionController::class, 'confirm'])->name('author.visits.confirm');
+    Route::patch('/visits/{visit}/reschedule', [AuthorVisitActionController::class, 'reschedule'])->name('author.visits.reschedule');
 });
 
 // Auditor protected routes
 // (Authentication handled by unified auth system)
-Route::prefix('auditor')->middleware(['auditor'])->group(function () {
+Route::prefix('auditor')->middleware(['web', 'auditor'])->group(function () {
     Route::get('/dashboard', [AuditorDashboardController::class, 'index'])->name('auditor.dashboard');
     
     // Visit management for Auditors
     Route::get('/visits', [AuditorVisitController::class, 'index'])->name('auditor.visits.index');
     Route::get('/visits/{visit}', [AuditorVisitController::class, 'show'])->name('auditor.visits.show');
+    Route::get('/visits/{visit}/detail', [AuditorVisitController::class, 'detail'])->name('auditor.visits.detail');
     
-    // Visit status management
+    // Visit workflow management
+    // Auditor Actions - New Logic Flow
+    Route::patch('/visits/{visit}/start', [AuditorVisitController::class, 'start'])->name('auditor.visits.start');
+    Route::patch('/visits/{visit}/complete', [AuditorVisitActionController::class, 'complete'])->name('auditor.visits.complete');
+    
+    // Visit status management (legacy)
     Route::patch('/visits/{visit}/status', [AuditorVisitController::class, 'updateStatus'])->name('auditor.visits.update-status');
     
     // Visit reporting
@@ -199,4 +217,3 @@ if (app()->environment(['local', 'testing'])) {
         return view('test-errors', compact('errors'));
     })->name('test.errors');
 }
-

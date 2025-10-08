@@ -22,7 +22,8 @@ class AuthorVisitController extends Controller
             return redirect()->route('login')->with('error', 'Please login to access this page.');
         }
         
-        $query = Visit::where('author_name', $author->name);
+        $query = Visit::query()
+                      ->where('author_name', $author->name);
 
         // Apply filters
         if ($request->filled('status_filter')) {
@@ -39,7 +40,7 @@ class AuthorVisitController extends Controller
         
         $visits = $query->orderBy('visit_date', 'desc')->paginate(15);
 
-        $statuses = ['belum_dikunjungi', 'dalam_perjalanan', 'sedang_dikunjungi', 'menunggu_acc', 'selesai'];
+        $statuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
 
         // Check if this is an AJAX request for dynamic updates
         if ($request->ajax()) {
@@ -58,12 +59,117 @@ class AuthorVisitController extends Controller
     public function show(Visit $visit)
     {
         // Check if the visit belongs to current author
-        if ($visit->author_id !== Auth::id()) {
+        if ($visit->author_name !== Auth::user()->name) {
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
-        $visit->load(['author', 'auditor', 'visitReport']);
+        // Load removed - using name-based fields
 
         return view('visits.detail-modal', compact('visit'));
+    }
+
+    /**
+     * Show visit details via AJAX for modal
+     */
+    public function detail(Visit $visit)
+    {
+        // Check if the visit belongs to current author
+        if ($visit->author_name !== Auth::user()->name) {
+            abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
+        }
+
+        // Load removed - using name-based fields
+
+        return view('visits.detail-modal', compact('visit'));
+    }
+
+    /**
+     * Confirm visit by author
+     */
+    public function confirm(Visit $visit)
+    {
+        try {
+            \Log::info('AuthorVisitController::confirm - Starting', [
+                'visit_id' => $visit->id,
+                'user_id' => Auth::id(),
+                'user_name' => Auth::user()->name ?? 'Unknown'
+            ]);
+
+            // Check if the visit belongs to current author
+            if ($visit->author_name !== Auth::user()->name) {
+                \Log::warning('AuthorVisitController::confirm - Access denied', [
+                    'visit_author' => $visit->author_name,
+                    'current_user' => Auth::user()->name
+                ]);
+                abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
+            }
+
+            if (!$visit->canBeConfirmed()) {
+                \Log::warning('AuthorVisitController::confirm - Cannot be confirmed', [
+                    'visit_status' => $visit->status
+                ]);
+                return back()->with('error', 'Kunjungan ini tidak dapat dikonfirmasi.');
+            }
+
+            $visit->update([
+                'status' => 'confirmed',
+                'confirmed_at' => now(),
+                'confirmed_by' => Auth::id()
+            ]);
+
+            \Log::info('AuthorVisitController::confirm - Success', [
+                'visit_id' => $visit->id,
+                'new_status' => $visit->fresh()->status
+            ]);
+
+            return back()->with('success', 'Kunjungan berhasil dikonfirmasi. Auditor akan segera memproses kunjungan.');
+            
+        } catch (\Exception $e) {
+            \Log::error('AuthorVisitController::confirm - Exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->with('error', 'Terjadi kesalahan saat konfirmasi kunjungan.');
+        }
+    }
+
+    /**
+     * Reschedule visit by author
+     */
+    public function reschedule(Request $request, Visit $visit)
+    {
+        // Check if the visit belongs to current author
+        if ($visit->author_name !== Auth::user()->name) {
+            abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
+        }
+
+        if (!$visit->canBeRescheduled()) {
+            return back()->with('error', 'Kunjungan ini tidak dapat diundur lagi. Batas pengunduran jadwal sudah tercapai (3x).');
+        }
+
+        $request->validate([
+            'new_visit_date' => 'required|date|after:today',
+            'reschedule_reason' => 'required|string|max:500'
+        ]);
+
+        $newRescheduleCount = $visit->reschedule_count + 1;
+        $visit->update([
+            'visit_date' => $request->new_visit_date,
+            'reschedule_count' => $newRescheduleCount,
+            'notes' => ($visit->notes ? $visit->notes . "\n\n" : '') . 
+                      "PENGUNDURAN JADWAL #{$newRescheduleCount} pada " . now()->format('d/m/Y H:i') . 
+                      " - Alasan: " . $request->reschedule_reason
+        ]);
+
+        $remainingAttempts = $visit->remaining_reschedule_attempts;
+        $message = 'Jadwal kunjungan berhasil diundur.';
+        if ($remainingAttempts > 0) {
+            $message .= " Sisa kesempatan mengundur jadwal: {$remainingAttempts}x";
+        } else {
+            $message .= " Tidak ada lagi kesempatan mengundur jadwal.";
+        }
+
+        return back()->with('success', $message);
     }
 }
