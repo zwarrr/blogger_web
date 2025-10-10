@@ -62,24 +62,36 @@ class Visit extends Model
 
     public function auditor()
     {
-        return $this->belongsTo(User::class, 'auditor_id', 'id')->withDefault([
-            'name' => $this->auditor_name ?? 'Unknown Auditor',
-            'email' => 'No email'
-        ]);
+        return $this->belongsTo(Auditor::class, 'auditor_id', 'id');
     }
 
     public function author()
     {
-        return $this->belongsTo(User::class, 'author_id', 'id')->withDefault([
-            'name' => $this->author_name ?? 'Unknown Author',
-            'email' => 'No email'
-        ]);
+        return $this->belongsTo(User::class, 'author_id', 'id');
     }
 
-    public function visitReport()
+    public function admin()
     {
-        return $this->hasOne(VisitReport::class, 'visit_id', 'id');
+        return $this->belongsTo(User::class, 'created_by', 'id');
     }
+
+    // Relasi untuk mendapatkan user yang mengkonfirmasi
+    public function confirmedByUser()
+    {
+        return $this->belongsTo(User::class, 'confirmed_by', 'id');
+    }
+
+    // Relasi untuk mendapatkan user yang merescheduled
+    public function rescheduledByUser()
+    {
+        return $this->belongsTo(User::class, 'rescheduled_by', 'id');
+    }
+
+    // Temporarily commented out until visit_reports table is created properly
+    // public function visitReport()
+    // {
+    //     return $this->hasOne(VisitReport::class, 'visit_id', 'id');
+    // }
 
     public static function generateVisitId()
     {
@@ -135,7 +147,21 @@ class Visit extends Model
      */
     public function canBeRescheduled()
     {
-        return in_array($this->status, ['belum_dikunjungi', 'dalam_perjalanan']) && $this->reschedule_count < 3;
+        // Check status first
+        if (!in_array($this->status, ['belum_dikunjungi', 'dalam_perjalanan'])) {
+            return false;
+        }
+
+        // Get current reschedule count
+        $currentRescheduleCount = $this->reschedule_count ?? 0;
+        
+        // Check if reschedule count should be reset (after 1 month)
+        if ($this->rescheduled_at && $this->rescheduled_at->lt(now()->subMonth())) {
+            return true; // Can reschedule because more than 1 month has passed
+        }
+        
+        // Check if still within limit
+        return $currentRescheduleCount < 3;
     }
 
     /**
@@ -143,7 +169,7 @@ class Visit extends Model
      */
     public function canBeStarted()
     {
-        return $this->status === 'belum_dikunjungi';
+        return $this->status === 'dalam_perjalanan';
     }
 
     /**

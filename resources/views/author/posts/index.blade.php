@@ -6,6 +6,77 @@
 
 @section('content')
 <div class="space-y-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Artikel -->
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-500">Total Artikel</h3>
+                </div>
+                <span class="text-xs text-green-600">&nbsp;</span>
+            </div>
+            <p class="text-2xl font-bold mt-2">{{ number_format($statistics['total'] ?? 0) }}</p>
+            <p class="text-xs text-gray-500 mt-1">Seluruh artikel</p>
+        </div>
+
+        <!-- Published -->
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="h-9 w-9 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-500">Published</h3>
+                </div>
+                <span class="text-xs text-green-600">&nbsp;</span>
+            </div>
+            <p class="text-2xl font-bold mt-2">{{ number_format($statistics['published'] ?? 0) }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $statistics['total'] > 0 ? round((($statistics['published'] ?? 0) / $statistics['total']) * 100, 1) : 0 }}% dari total</p>
+        </div>
+
+        <!-- Draft -->
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-500">Draft</h3>
+                </div>
+                <span class="text-xs text-green-600">&nbsp;</span>
+            </div>
+            <p class="text-2xl font-bold mt-2">{{ number_format($statistics['draft'] ?? 0) }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $statistics['total'] > 0 ? round((($statistics['draft'] ?? 0) / $statistics['total']) * 100, 1) : 0 }}% dari total</p>
+        </div>
+
+        <!-- Featured -->
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="h-9 w-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-medium text-gray-500">Featured</h3>
+                </div>
+                <span class="text-xs text-green-600">&nbsp;</span>
+            </div>
+            <p class="text-2xl font-bold mt-2">{{ number_format($statistics['featured'] ?? 0) }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $statistics['total'] > 0 ? round((($statistics['featured'] ?? 0) / $statistics['total']) * 100, 1) : 0 }}% dari total</p>
+        </div>
+    </div>
+
     <!-- Action Bar -->
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
@@ -124,6 +195,34 @@
                 </div>
             </div>
         @endforelse
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-md w-full">
+        <div class="p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Hapus Artikel</h3>
+            <p class="text-sm text-gray-600 text-center mb-6">
+                Apakah Anda yakin ingin menghapus artikel <span id="deletePostTitle" class="font-semibold text-gray-900"></span>? 
+                Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeDeleteModal()" 
+                        class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
+                    Batal
+                </button>
+                <button type="button" id="confirmDeleteBtn" 
+                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
+                    Hapus
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -296,30 +395,31 @@
         editingPostId = null;
     }
 
+    let deletePostId = null;
+
     function deletePost(postId, postTitle) {
-        if (confirm(`Apakah Anda yakin ingin menghapus artikel "${postTitle}"?`)) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/author/posts/${postId}`;
-            
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            form.innerHTML = `
-                <input type="hidden" name="_token" value="${csrfToken}">
-                <input type="hidden" name="_method" value="DELETE">
-            `;
-            
-            document.body.appendChild(form);
-            form.submit();
-        }
+        deletePostId = postId;
+        document.getElementById('deletePostTitle').textContent = postTitle;
+        document.getElementById('deleteModal').classList.remove('hidden');
     }
 
-    // Form submission
-    document.getElementById('postForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        deletePostId = null;
+    }
+
+    function confirmDelete() {
+        if (!deletePostId) return;
+
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        const originalText = confirmBtn.textContent;
+        confirmBtn.textContent = 'Menghapus...';
+        confirmBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('_method', 'DELETE');
         
-        const formData = new FormData(this);
-        
-        fetch(this.action, {
+        fetch(`/author/posts/${deletePostId}`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -329,14 +429,109 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                closeDeleteModal();
+                showSuccessNotification('Artikel berhasil dihapus!');
                 location.reload();
             } else {
-                alert('Terjadi kesalahan. Silakan coba lagi.');
+                showErrorNotification(data.message || 'Terjadi kesalahan saat menghapus artikel.');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Terjadi kesalahan. Silakan coba lagi.');
+            showErrorNotification('Terjadi kesalahan saat menghapus artikel.');
+        })
+        .finally(() => {
+            confirmBtn.textContent = originalText;
+            confirmBtn.disabled = false;
+        });
+    }
+
+    // Success/Error notification functions
+    function showSuccessNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                ${message}
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    function showErrorNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                ${message}
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Form submission
+    document.getElementById('postForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Add method spoofing if editing
+        if (editingPostId) {
+            formData.append('_method', 'PUT');
+        }
+        
+        // Show loading state
+        const submitBtn = document.getElementById('submitText');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Menyimpan...';
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Network response was not ok');
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                closeModal();
+                showSuccessNotification(editingPostId ? 'Artikel berhasil diperbarui!' : 'Artikel berhasil dibuat!');
+                location.reload();
+            } else {
+                showErrorNotification(data.message || 'Terjadi kesalahan. Silakan coba lagi.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorNotification('Terjadi kesalahan. Silakan coba lagi.');
+        })
+        .finally(() => {
+            submitBtn.textContent = originalText;
         });
     });
 
@@ -344,6 +539,27 @@
     document.getElementById('postModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeModal();
+        }
+    });
+
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDeleteModal();
+        }
+    });
+
+    // Add event listener for confirm delete button
+    document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+
+    // Keyboard support for modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (!document.getElementById('postModal').classList.contains('hidden')) {
+                closeModal();
+            }
+            if (!document.getElementById('deleteModal').classList.contains('hidden')) {
+                closeDeleteModal();
+            }
         }
     });
 </script>

@@ -13,95 +13,62 @@ class VisitSeeder extends Seeder
      */
     public function run(): void
     {
+        // Ambil users berdasarkan role
+        $authors = \App\Models\User::where('role', 'author')->get();
+        $auditors = \App\Models\User::where('role', 'auditor')->get();
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        
+        if ($authors->isEmpty() || $auditors->isEmpty() || $admins->isEmpty()) {
+            echo "Tidak ada user dengan role author, auditor, atau admin. Silakan buat user terlebih dahulu.\n";
+            return;
+        }
+
         $visits = [
             [
-                'visit_id' => 'VIS-20251006-0001',
-                'author_name' => 'Ahmad Wijaya',
-                'auditor_name' => 'Budi Santoso',
+                'author_name' => $authors[0]->name,
+                'author_id' => $authors[0]->id,
+                'auditor_name' => $auditors[0]->name,
+                'auditor_id' => $auditors[0]->id,
                 'location_address' => 'Jl. Sudirman No. 45, Jakarta Pusat, DKI Jakarta 10110',
                 'latitude' => -6.2088,
                 'longitude' => 106.8456,
-                'status' => 'completed',
+                'status' => 'selesai',
                 'notes' => 'Kunjungan berjalan lancar. Author sangat kooperatif dan menyediakan dokumentasi lengkap.',
                 'visit_date' => Carbon::now()->subDays(5),
+                'visit_purpose' => 'Audit rutin konten blog',
+                'created_by' => $admins[0]->id,
+                'reschedule_count' => 0,
             ],
             [
-                'visit_id' => 'VIS-20251006-0002',
-                'author_name' => 'Siti Nurhaliza',
-                'auditor_name' => 'Dwi Permata',
+                'author_name' => $authors[1]->name ?? $authors[0]->name,
+                'author_id' => $authors[1]->id ?? $authors[0]->id,
+                'auditor_name' => $auditors[1]->name ?? $auditors[0]->name,
+                'auditor_id' => $auditors[1]->id ?? $auditors[0]->id,
                 'location_address' => 'Jl. Malioboro No. 123, Yogyakarta, DIY 55271',
                 'latitude' => -7.7956,
                 'longitude' => 110.3695,
-                'status' => 'confirmed',
+                'status' => 'belum_dikunjungi',
                 'notes' => 'Menunggu konfirmasi dari author terkait waktu kunjungan.',
                 'visit_date' => Carbon::now()->addDays(3),
+                'visit_purpose' => 'Review konten dan SEO',
+                'created_by' => $admins[0]->id,
+                'reschedule_count' => 0,
             ],
             [
-                'visit_id' => 'VIS-20251006-0003',
-                'author_name' => 'Rizki Pratama',
-                'auditor_name' => 'Andi Wijaya',
+                'author_name' => $authors[2]->name ?? $authors[0]->name,
+                'author_id' => $authors[2]->id ?? $authors[0]->id,
+                'auditor_name' => $auditors[2]->name ?? $auditors[0]->name,
+                'auditor_id' => $auditors[2]->id ?? $auditors[0]->id,
                 'location_address' => 'Jl. Asia Afrika No. 67, Bandung, Jawa Barat 40111',
                 'latitude' => -6.9175,
                 'longitude' => 107.6191,
-                'status' => 'pending',
+                'status' => 'dalam_perjalanan',
                 'notes' => 'Kunjungan pertama ke lokasi ini. Perlu persiapan ekstra.',
-                'visit_date' => Carbon::now()->addDays(7),
-            ],
-            [
-                'visit_id' => 'VIS-20251006-0004',
-                'author_name' => 'Dina Marlina',
-                'auditor_name' => 'Hendra Gunawan',
-                'location_address' => 'Jl. Tunjungan No. 89, Surabaya, Jawa Timur 60261',
-                'latitude' => -7.2575,
-                'longitude' => 112.7521,
-                'status' => 'completed',
-                'notes' => 'Audit selesai dengan hasil memuaskan. Semua dokumen telah diperiksa.',
-                'visit_date' => Carbon::now()->subDays(2),
-            ],
-            [
-                'visit_id' => 'VIS-20251006-0005',
-                'author_name' => 'Fajar Ramadhan',
-                'auditor_name' => 'Linda Sari',
-                'location_address' => 'Jl. Diponegoro No. 234, Semarang, Jawa Tengah 50241',
-                'latitude' => -6.9666,
-                'longitude' => 110.4170,
-                'status' => 'confirmed',
-                'notes' => 'Perlu koordinasi lebih lanjut terkait dokumentasi yang diperlukan.',
-                'visit_date' => Carbon::now()->addDays(5),
-            ],
-            [
-                'visit_id' => 'VIS-20251006-0006',
-                'author_name' => 'Maya Indira',
-                'auditor_name' => 'Rudi Hartono',
-                'location_address' => 'Jl. Gajah Mada No. 456, Medan, Sumatera Utara 20111',
-                'latitude' => 3.5952,
-                'longitude' => 98.6722,
-                'status' => 'pending',
-                'notes' => 'Menunggu konfirmasi ketersediaan author.',
-                'visit_date' => Carbon::now()->addDays(10),
-            ],
-            [
-                'visit_id' => 'VIS-20251006-0007',
-                'author_name' => 'Teguh Prasetyo',
-                'auditor_name' => 'Sri Wahyuni',
-                'location_address' => 'Jl. Imam Bonjol No. 78, Denpasar, Bali 80119',
-                'latitude' => -8.6500,
-                'longitude' => 115.2167,
-                'status' => 'completed',
-                'notes' => 'Kunjungan berhasil. Author memberikan feedback positif tentang proses audit.',
-                'visit_date' => Carbon::now()->subDays(8),
-            ],
-            [
-                'visit_id' => 'VIS-20251006-0008',
-                'author_name' => 'Indah Permatasari',
-                'auditor_name' => 'Joko Susilo',
-                'location_address' => 'Jl. Ahmad Yani No. 321, Makassar, Sulawesi Selatan 90111',
-                'latitude' => -5.1477,
-                'longitude' => 119.4327,
-                'status' => 'pending',
-                'notes' => 'Koordinasi awal telah dilakukan. Menunggu jadwal yang tepat.',
-                'visit_date' => Carbon::now()->addDays(12),
-            ],
+                'visit_date' => Carbon::now()->addDays(1),
+                'visit_purpose' => 'Audit keamanan konten',
+                'created_by' => $admins[0]->id,
+                'reschedule_count' => 0,
+            ]
         ];
 
         foreach ($visits as $visitData) {

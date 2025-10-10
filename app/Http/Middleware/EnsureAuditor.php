@@ -15,7 +15,7 @@ class EnsureAuditor
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || auth()->user()->role !== 'auditor') {
+        if (!auth('web')->check() || auth('web')->user()->role !== 'auditor') {
             return redirect()->route('auth.login');
         }
 

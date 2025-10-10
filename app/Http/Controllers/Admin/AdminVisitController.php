@@ -46,16 +46,24 @@ class AdminVisitController extends Controller
             });
         }
         
-        $visits = $query->orderBy('visit_date', 'desc')->paginate(15);
+        // Load visits with relationships (exclude visitReport temporarily until table exists)
+        $visits = $query->with(['author', 'auditor'])
+                       ->orderBy('visit_date', 'desc')
+                       ->paginate(15);
         
         // For filter dropdowns
         $authors = User::where('role', 'author')->get();
         $auditors = User::where('role', 'auditor')->get();
-        $statuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
+        $statuses = ['belum_dikunjungi', 'dalam_perjalanan', 'sedang_dikunjungi', 'menunggu_acc', 'selesai', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
         
         // Statistics
         $stats = [
             'total' => Visit::count(),
+            'belum_dikunjungi' => Visit::where('status', 'belum_dikunjungi')->count(),
+            'dalam_perjalanan' => Visit::where('status', 'dalam_perjalanan')->count(),
+            'sedang_dikunjungi' => Visit::where('status', 'sedang_dikunjungi')->count(),
+            'menunggu_acc' => Visit::where('status', 'menunggu_acc')->count(),
+            'selesai' => Visit::where('status', 'selesai')->count(),
             'pending' => Visit::where('status', 'pending')->count(),
             'confirmed' => Visit::where('status', 'confirmed')->count(),
             'in_progress' => Visit::where('status', 'in_progress')->count(),
@@ -185,7 +193,7 @@ class AdminVisitController extends Controller
             $validator = Validator::make($request->all(), [
                 'author_id' => 'required|string',
                 'auditor_id' => 'required|string', // Remove exists check since we handle both tables
-                'tanggal_kunjungan' => 'required|date|after_or_equal:today',
+                'visit_date' => 'required|date|after_or_equal:today',
                 'tujuan' => 'required|string|max:1000',
                 'catatan_admin' => 'nullable|string|max:500',
             ]);
@@ -294,7 +302,7 @@ class AdminVisitController extends Controller
             'auditor_name' => $auditor->name,
             'assigned_to' => $assignedToUserId, // Use users table ID for foreign key
             'location_address' => $author->address ?? ($author->alamat ?? 'Alamat akan diverifikasi oleh auditor'),
-            'visit_date' => $request->tanggal_kunjungan,
+            'visit_date' => $request->visit_date,
             'visit_purpose' => $request->tujuan,
             'notes' => $request->catatan_admin,
             'status' => 'belum_dikunjungi',
@@ -336,11 +344,104 @@ class AdminVisitController extends Controller
     }
 
     /**
+     * Return visit details as JSON for modal display
+     */
+    public function showJson(Visit $visit)
+    {
+        // Load relationships if not already loaded (exclude visitReport temporarily until table exists)
+        $visit->load(['author', 'auditor']);
+        
+        $data = [
+            'id' => $visit->id,
+            'visit_id' => $visit->visit_id,
+            'visit_date' => $visit->visit_date,
+            'status' => $visit->status,
+            'duration' => $visit->duration,
+            'purpose' => $visit->visit_purpose,
+            'notes' => $visit->notes,
+            'location_address' => $visit->location_address,
+            'latitude' => $visit->latitude,
+            'longitude' => $visit->longitude,
+            'author' => [
+                'name' => $visit->author?->name ?? $visit->author_name ?? '',
+                'email' => $visit->author?->email ?? '',
+                'phone' => $visit->author?->phone ?? '',
+                'address' => $visit->author?->address ?? ''
+            ],
+            'auditor' => [
+                'name' => $visit->auditor?->name ?? $visit->auditor_name ?? '',
+                'email' => $visit->auditor?->email ?? '',
+                'phone' => $visit->auditor?->phone ?? ''
+            ]
+        ];
+
+        // Process photos to use correct storage paths
+        $photos = [];
+        if ($visit->photos) {
+            // Handle JSON field for photos with proper type checking
+            $photosData = $visit->photos;
+            if (is_string($photosData)) {
+                $photosData = json_decode($photosData, true);
+            }
+            
+            if (is_array($photosData)) {
+                foreach ($photosData as $photo) {
+                    if ($photo) {
+                        // Check if path already includes storage/visits
+                        if (strpos($photo, 'storage/visits/') !== false) {
+                            $photos[] = asset($photo);
+                        } else {
+                            // Build path: storage/visits/photos/{visit_id}/filename
+                            $filename = basename($photo);
+                            $photos[] = asset("storage/visits/photos/{$visit->id}/{$filename}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle selfie photo path - match storage structure (selfies/1/filename.jpg)
+        $selfiePhoto = null;
+        if ($visit->selfie_photo) {
+            // Check if path already includes storage/visits
+            if (strpos($visit->selfie_photo, 'storage/visits/') !== false) {
+                $selfiePhoto = asset($visit->selfie_photo);
+            } else {
+                // Build path: storage/visits/selfies/{visit_id}/filename
+                $filename = basename($visit->selfie_photo);
+                $selfiePhoto = asset("storage/visits/selfies/{$visit->id}/{$filename}");
+            }
+        }
+
+        // Use visit table data directly since visitReport table may not exist
+        $data['report'] = [
+            'report_notes' => $visit->report_notes,
+            'auditor_notes' => $visit->auditor_notes,
+            'photos' => $photos,
+            'selfie_photo' => $selfiePhoto,
+            'selfie_latitude' => $visit->selfie_latitude,
+            'selfie_longitude' => $visit->selfie_longitude,
+            'visit_start_time' => $visit->started_at,
+            'visit_end_time' => $visit->completed_at,
+            'created_at' => $visit->updated_at
+        ];
+
+        return response()->json($data);
+    }
+
+    /**
      * Show the form for editing the specified visit
      */
     public function edit(Visit $visit)
     {
-        return view('admin.visits.edit', compact('visit'));
+        // Load visit with the same relationships as in index view
+        $visit->load(['author', 'auditor', 'report', 'report.photos']);
+        
+        // Get authors and auditors for dropdowns
+        $authors = User::where('role', 'author')->get();
+        $auditors = User::where('role', 'auditor')->get();
+        
+        return view('admin.visits.edit', compact('visit', 'authors', 'auditors'));
     }
 
     /**
@@ -349,14 +450,16 @@ class AdminVisitController extends Controller
     public function update(Request $request, Visit $visit)
     {
         $validator = Validator::make($request->all(), [
-            'author_name' => 'required|string|max:255',
-            'auditor_name' => 'required|string|max:255',
+            'author_id' => 'required|exists:users,id',
+            'auditor_id' => 'required|exists:users,id',
             'location_address' => 'required|string',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'visit_date' => 'required|date',
-            'status' => 'required|in:pending,konfirmasi,selesai',
+            'status' => 'required|string',
             'notes' => 'nullable|string',
+            'purpose' => 'nullable|string',
+            'duration' => 'nullable|string',
             'photos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
@@ -375,15 +478,27 @@ class AdminVisitController extends Controller
             }
         }
 
+        // Get author and auditor names for backward compatibility
+        $author = User::find($request->author_id);
+        $auditor = User::find($request->auditor_id);
+
         $visit->update([
-            'author_name' => $request->author_name,
-            'auditor_name' => $request->auditor_name,
+            'author_id' => $request->author_id,
+            'auditor_id' => $request->auditor_id,
+            'author_name' => $author ? $author->name : null,
+            'auditor_name' => $auditor ? $auditor->name : null,
+            'author_email' => $author ? $author->email : null,
+            'auditor_email' => $auditor ? $auditor->email : null,
+            'author_phone' => $author ? $author->phone : null,
+            'auditor_phone' => $auditor ? $auditor->phone : null,
             'location_address' => $request->location_address,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'visit_date' => $request->visit_date,
             'status' => $request->status,
             'notes' => $request->notes,
+            'purpose' => $request->purpose,
+            'duration' => $request->duration,
             'photos' => $photosPaths,
         ]);
 
@@ -440,11 +555,16 @@ class AdminVisitController extends Controller
     /**
      * Approve visit report (ACC function)
      */
-    public function approve(Visit $visit)
+    public function approve(Request $request, Visit $visit)
     {
         if ($visit->status !== 'menunggu_acc') {
-            return redirect()->back()
-                ->with('error', 'Kunjungan tidak dalam status menunggu ACC');
+            $message = 'Kunjungan tidak dalam status menunggu ACC';
+            
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            
+            return redirect()->back()->with('error', $message);
         }
 
         $visit->update([
@@ -452,8 +572,13 @@ class AdminVisitController extends Controller
             'completed_at' => now()
         ]);
 
-        return redirect()->back()
-            ->with('success', 'Laporan kunjungan telah di-ACC dan diselesaikan');
+        $message = 'Laporan kunjungan telah di-ACC dan diselesaikan';
+        
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**
@@ -462,12 +587,17 @@ class AdminVisitController extends Controller
     public function reject(Request $request, Visit $visit)
     {
         $request->validate([
-            'rejection_notes' => 'required|string'
+            'rejection_notes' => 'required|string|min:10'
         ]);
 
         if ($visit->status !== 'menunggu_acc') {
-            return redirect()->back()
-                ->with('error', 'Kunjungan tidak dalam status menunggu ACC');
+            $message = 'Kunjungan tidak dalam status menunggu ACC';
+            
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            
+            return redirect()->back()->with('error', $message);
         }
 
         $visit->update([
@@ -479,8 +609,13 @@ class AdminVisitController extends Controller
             'selfie_longitude' => null,
         ]);
 
-        return redirect()->back()
-            ->with('success', 'Laporan kunjungan ditolak, auditor perlu melakukan kunjungan ulang');
+        $message = 'Laporan kunjungan ditolak, auditor perlu melakukan kunjungan ulang';
+        
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**

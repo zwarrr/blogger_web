@@ -19,12 +19,13 @@ class AuditorVisitController extends Controller
     {
         $auditor = Auth::user();
         
-        if (!$auditor) {
-            return redirect()->route('login')->with('error', 'Please login to access this page.');
+        if (!$auditor || $auditor->role !== 'auditor') {
+            return redirect()->route('auth.login')->with('error', 'Please login to access this page.');
         }
         
         $query = Visit::query()
-                      ->where('auditor_name', $auditor->name);
+                      ->with(['admin', 'author', 'auditor'])
+                      ->where('auditor_id', $auditor->id);
 
         // Apply filters
         if ($request->filled('status_filter')) {
@@ -36,21 +37,26 @@ class AuditorVisitController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('author_name', 'like', '%' . $request->search . '%');
+            $query->where(function($q) use ($request) {
+                $q->where('author_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('location_address', 'like', '%' . $request->search . '%')
+                  ->orWhereHas('author', function($authorQuery) use ($request) {
+                      $authorQuery->where('name', 'like', '%' . $request->search . '%');
+                  });
+            });
         }
         
         $visits = $query->orderBy('visit_date', 'desc')->paginate(15);
 
-        $statuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
+        $statuses = ['belum_dikunjungi', 'dalam_perjalanan', 'sedang_dikunjungi', 'selesai'];
         
         // Statistics for auditor
         $stats = [
             'total' => Visit::where('auditor_id', $auditor->id)->count(),
-            'pending' => Visit::where('auditor_id', $auditor->id)->where('status', 'pending')->count(),
-            'confirmed' => Visit::where('auditor_id', $auditor->id)->where('status', 'confirmed')->count(),
-            'in_progress' => Visit::where('auditor_id', $auditor->id)->where('status', 'in_progress')->count(),
-            'completed' => Visit::where('auditor_id', $auditor->id)->where('status', 'completed')->count(),
-            'cancelled' => Visit::where('auditor_id', $auditor->id)->where('status', 'cancelled')->count(),
+            'belum_dikunjungi' => Visit::where('auditor_id', $auditor->id)->where('status', 'belum_dikunjungi')->count(),
+            'dalam_perjalanan' => Visit::where('auditor_id', $auditor->id)->where('status', 'dalam_perjalanan')->count(),
+            'sedang_dikunjungi' => Visit::where('auditor_id', $auditor->id)->where('status', 'sedang_dikunjungi')->count(),
+            'selesai' => Visit::where('auditor_id', $auditor->id)->whereIn('status', ['menunggu_acc', 'selesai'])->count(),
         ];
 
         // Check if this is an AJAX request for dynamic updates
@@ -69,12 +75,15 @@ class AuditorVisitController extends Controller
      */
     public function show(Visit $visit)
     {
+        $auditor = Auth::user();
+        
         // Check if the visit is assigned to current auditor
-        if ($visit->auditor_name !== Auth::user()->name) {
+        if ($visit->auditor_id !== $auditor->id) {
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
-        // Load removed - using name-based fields
+        // Load relationships
+        $visit->load(['admin', 'author', 'auditor']);
 
         return view('auditor.visits.show', compact('visit'));
     }
@@ -84,14 +93,92 @@ class AuditorVisitController extends Controller
      */
     public function detail(Visit $visit)
     {
+        $auditor = Auth::user();
+        
         // Check if the visit is assigned to current auditor
-        if ($visit->auditor_name !== Auth::user()->name) {
+        if ($visit->auditor_id !== $auditor->id) {
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
-        // Load removed - using name-based fields
+        // Load relationships if not already loaded
+        $visit->load(['author', 'auditor']);
+        
+        $data = [
+            'id' => $visit->id,
+            'visit_id' => $visit->visit_id,
+            'visit_date' => $visit->visit_date,
+            'status' => $visit->status,
+            'duration' => $visit->duration,
+            'purpose' => $visit->visit_purpose,
+            'notes' => $visit->notes,
+            'location_address' => $visit->location_address,
+            'latitude' => $visit->latitude,
+            'longitude' => $visit->longitude,
+            'author' => [
+                'name' => $visit->author?->name ?? $visit->author_name ?? '',
+                'email' => $visit->author?->email ?? '',
+                'phone' => $visit->author?->phone ?? '',
+                'address' => $visit->author?->address ?? ''
+            ],
+            'auditor' => [
+                'name' => $visit->auditor?->name ?? $visit->auditor_name ?? '',
+                'email' => $visit->auditor?->email ?? '',
+                'phone' => $visit->auditor?->phone ?? ''
+            ]
+        ];
 
-        return view('visits.detail-modal', compact('visit'));
+        // Process photos to use correct storage paths
+        $photos = [];
+        if ($visit->photos) {
+            // Handle JSON field for photos with proper type checking
+            $photosData = $visit->photos;
+            if (is_string($photosData)) {
+                $photosData = json_decode($photosData, true);
+            }
+            
+            if (is_array($photosData)) {
+                foreach ($photosData as $photo) {
+                    if ($photo) {
+                        // Check if path already includes storage/visits
+                        if (strpos($photo, 'storage/visits/') !== false) {
+                            $photos[] = asset($photo);
+                        } else {
+                            // Build path: storage/visits/photos/{visit_id}/filename
+                            $filename = basename($photo);
+                            $photos[] = asset("storage/visits/photos/{$visit->id}/{$filename}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle selfie photo path - match storage structure (selfies/1/filename.jpg)
+        $selfiePhoto = null;
+        if ($visit->selfie_photo) {
+            // Check if path already includes storage/visits
+            if (strpos($visit->selfie_photo, 'storage/visits/') !== false) {
+                $selfiePhoto = asset($visit->selfie_photo);
+            } else {
+                // Build path: storage/visits/selfies/{visit_id}/filename
+                $filename = basename($visit->selfie_photo);
+                $selfiePhoto = asset("storage/visits/selfies/{$visit->id}/{$filename}");
+            }
+        }
+
+        // Use visit table data directly since visitReport table may not exist
+        $data['report'] = [
+            'report_notes' => $visit->report_notes,
+            'auditor_notes' => $visit->auditor_notes,
+            'photos' => $photos,
+            'selfie_photo' => $selfiePhoto,
+            'selfie_latitude' => $visit->selfie_latitude,
+            'selfie_longitude' => $visit->selfie_longitude,
+            'visit_start_time' => $visit->started_at,
+            'visit_end_time' => $visit->completed_at,
+            'created_at' => $visit->updated_at
+        ];
+
+        return response()->json($data);
     }
 
     /**
@@ -100,7 +187,7 @@ class AuditorVisitController extends Controller
     public function createReport(Visit $visit)
     {
         // Check if the visit is assigned to current auditor
-        if ($visit->auditor_name !== Auth::user()->name) {
+        if ($visit->auditor_id !== Auth::id()) {
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
@@ -246,8 +333,10 @@ class AuditorVisitController extends Controller
      */
     public function showReport(Visit $visit)
     {
+        $auditor = Auth::user();
+        
         // Check if the visit is assigned to current auditor
-        if ($visit->auditor_id !== Auth::id()) {
+        if ($visit->auditor_id !== $auditor->id) {
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
@@ -266,8 +355,10 @@ class AuditorVisitController extends Controller
      */
     public function updateStatus(Request $request, Visit $visit)
     {
+        $auditor = Auth::user();
+        
         // Check if the visit is assigned to current auditor
-        if ($visit->auditor_id !== Auth::id()) {
+        if ($visit->auditor_id !== $auditor->id) {
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
@@ -318,31 +409,37 @@ class AuditorVisitController extends Controller
      */
     public function startProcess(Visit $visit)
     {
+        $auditor = Auth::user();
+        
         try {
             \Log::info('AuditorVisitController::startProcess - Starting', [
                 'visit_id' => $visit->id,
-                'user_id' => Auth::id(),
-                'user_name' => Auth::user()->name ?? 'Unknown'
+                'user_id' => $auditor->id,
+                'user_name' => $auditor->name ?? 'Unknown'
             ]);
 
-            // Check if the visit is assigned to current auditor
-            if ($visit->auditor_name !== Auth::user()->name) {
+            // Check if the visit is assigned to current auditor (by ID or name for backward compatibility)
+            if ($visit->auditor_id !== $auditor->id && $visit->auditor_name !== $auditor->name) {
                 \Log::warning('AuditorVisitController::startProcess - Access denied', [
-                    'visit_auditor' => $visit->auditor_name,
-                    'current_user' => Auth::user()->name
+                    'visit_auditor_id' => $visit->auditor_id,
+                    'visit_auditor_name' => $visit->auditor_name,
+                    'current_user_id' => $auditor->id,
+                    'current_user_name' => $auditor->name
                 ]);
                 abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
             }
 
-            if (!$visit->canBeStarted()) {
+            // Check if visit can be started (from dalam_perjalanan status)
+            if ($visit->status !== 'dalam_perjalanan') {
                 \Log::warning('AuditorVisitController::startProcess - Cannot be started', [
-                    'visit_status' => $visit->status
+                    'visit_status' => $visit->status,
+                    'expected_status' => 'dalam_perjalanan'
                 ]);
-                return back()->with('error', 'Kunjungan ini tidak dapat diproses. Pastikan sudah dikonfirmasi oleh Author terlebih dahulu.');
+                return back()->with('error', 'Kunjungan ini tidak dapat diproses. Status saat ini: ' . $visit->status_label['text']);
             }
 
             $visit->update([
-                'status' => 'in_progress',
+                'status' => 'sedang_dikunjungi',
                 'started_at' => now()
             ]);
 
@@ -368,28 +465,33 @@ class AuditorVisitController extends Controller
      */
     public function complete(Request $request, Visit $visit)
     {
+        $auditor = Auth::user();
+        
         try {
             \Log::info('AuditorVisitController::complete - Starting', [
                 'visit_id' => $visit->id,
-                'user_id' => Auth::id(),
-                'user_name' => Auth::user()->name ?? 'Unknown'
+                'user_id' => $auditor->id,
+                'user_name' => $auditor->name ?? 'Unknown'
             ]);
 
-            // Check if the visit is assigned to current auditor
-            if ($visit->auditor_name !== Auth::user()->name) {
+            // Check if the visit is assigned to current auditor (by ID or name for backward compatibility)
+            if ($visit->auditor_id !== $auditor->id && $visit->auditor_name !== $auditor->name) {
                 \Log::warning('AuditorVisitController::complete - Access denied', [
-                    'visit_auditor' => $visit->auditor_name,
-                    'current_user' => Auth::user()->name
+                    'visit_auditor_id' => $visit->auditor_id,
+                    'visit_auditor_name' => $visit->auditor_name,
+                    'current_user_id' => $auditor->id,
+                    'current_user_name' => $auditor->name
                 ]);
                 abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
             }
 
-            // Allow completion from both confirmed and in_progress status
-            if (!in_array($visit->status, ['confirmed', 'in_progress'])) {
+            // Allow completion from confirmed (dalam_perjalanan), in_progress (sedang_dikunjungi), and waiting ACC (menunggu_acc) status
+            if (!in_array($visit->status, ['dalam_perjalanan', 'sedang_dikunjungi', 'menunggu_acc'])) {
                 \Log::warning('AuditorVisitController::complete - Cannot be completed', [
-                    'visit_status' => $visit->status
+                    'visit_status' => $visit->status,
+                    'allowed_statuses' => ['dalam_perjalanan', 'sedang_dikunjungi', 'menunggu_acc']
                 ]);
-                return back()->with('error', 'Kunjungan ini tidak dapat diselesaikan. Pastikan sudah dikonfirmasi oleh Author terlebih dahulu.');
+                return back()->with('error', 'Kunjungan ini tidak dapat diselesaikan. Status saat ini: ' . $visit->status);
             }
 
             $request->validate([
@@ -425,7 +527,7 @@ class AuditorVisitController extends Controller
 
             // Prepare update data
             $updateData = [
-                'status' => 'completed',
+                'status' => 'menunggu_acc', // Set to waiting for admin approval first
                 'completed_at' => now(),
                 'auditor_notes' => $request->auditor_notes,
                 'selfie_photo' => $selfiePath,
@@ -434,8 +536,8 @@ class AuditorVisitController extends Controller
                 'photos' => array_merge($visit->photos ?? [], $photoPaths)
             ];
 
-            // If coming from confirmed status, also set started_at
-            if ($visit->status === 'confirmed') {
+            // If coming from dalam_perjalanan status, also set started_at
+            if ($visit->status === 'dalam_perjalanan') {
                 $updateData['started_at'] = now();
             }
 
@@ -470,33 +572,79 @@ class AuditorVisitController extends Controller
                 return redirect()->route('login')->with('error', 'Please login to access this page.');
             }
 
-            // Get statistics for the auditor
+            // Get statistics for the auditor using both auditor_id and auditor_name for backward compatibility
+            $visitQuery = Visit::where(function($query) use ($auditor) {
+                $query->where('auditor_id', $auditor->id)
+                      ->orWhere('auditor_name', $auditor->name);
+            });
+
+            // Get statistics with corrected status values from database
             $stats = [
-                'total' => Visit::where('auditor_name', $auditor->name)->count(),
-                'pending' => Visit::where('auditor_name', $auditor->name)->where('status', 'pending')->count(),
-                'confirmed' => Visit::where('auditor_name', $auditor->name)->where('status', 'confirmed')->count(),
-                'in_progress' => Visit::where('auditor_name', $auditor->name)->where('status', 'in_progress')->count(),
-                'completed' => Visit::where('auditor_name', $auditor->name)->where('status', 'completed')->count(),
-                'cancelled' => Visit::where('auditor_name', $auditor->name)->where('status', 'cancelled')->count(),
+                'total' => (clone $visitQuery)->count(),
+                'belum_dikunjungi' => (clone $visitQuery)->where('status', 'belum_dikunjungi')->count(),
+                'dikonfirmasi' => (clone $visitQuery)->where('status', 'dikonfirmasi')->count(),
+                'dalam_perjalanan' => (clone $visitQuery)->where('status', 'dalam_perjalanan')->count(),
+                'selesai' => (clone $visitQuery)->where('status', 'selesai')->count(),
+                'menunggu_acc' => (clone $visitQuery)->where('status', 'menunggu_acc')->count(),
+                // Legacy status mapping for backward compatibility
+                'pending' => (clone $visitQuery)->where('status', 'belum_dikunjungi')->count(),
+                'confirmed' => (clone $visitQuery)->where('status', 'dikonfirmasi')->count(),
+                'in_progress' => (clone $visitQuery)->where('status', 'dalam_perjalanan')->count(),
+                'completed' => (clone $visitQuery)->where('status', 'selesai')->count(),
+                'cancelled' => (clone $visitQuery)->where('status', 'dibatalkan')->count(),
             ];
 
-            // Monthly statistics
-            $monthlyStats = Visit::where('auditor_name', $auditor->name)
+            // Monthly statistics for current year
+            $monthlyStatsRaw = (clone $visitQuery)
                 ->selectRaw('MONTH(visit_date) as month, COUNT(*) as count')
+                ->whereNotNull('visit_date')
                 ->whereYear('visit_date', date('Y'))
                 ->groupBy('month')
                 ->orderBy('month')
                 ->get();
 
-            return view('auditor.visits.statistics', compact('stats', 'monthlyStats'));
+            // Convert to array with month numbers as keys (1-12)
+            $monthlyStats = [];
+            for ($i = 1; $i <= 12; $i++) {
+                $monthlyStats[$i] = 0;
+            }
+            
+            foreach ($monthlyStatsRaw as $stat) {
+                $monthlyStats[$stat->month] = $stat->count;
+            }
+
+            // Debug information
+            \Log::info('Auditor Statistics Debug', [
+                'auditor_id' => $auditor->id,
+                'auditor_name' => $auditor->name,
+                'total_visits' => $stats['total'],
+                'monthly_stats' => $monthlyStats
+            ]);
+
+            // Prepare additional variables for the view
+            $totalVisits = $stats['total'];
+            $pendingVisits = $stats['belum_dikunjungi'];
+            $completedVisits = $stats['selesai'];
+            $inProgressVisits = $stats['dalam_perjalanan'];
+
+            return view('auditor.visits.statistics', compact(
+                'stats', 
+                'monthlyStats', 
+                'totalVisits', 
+                'pendingVisits', 
+                'completedVisits', 
+                'inProgressVisits'
+            ));
             
         } catch (\Exception $e) {
             \Log::error('AuditorVisitController::statistics - Exception', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'auditor_id' => Auth::id(),
+                'auditor_name' => Auth::user() ? Auth::user()->name : 'unknown'
             ]);
             
-            return back()->with('error', 'Terjadi kesalahan saat memuat statistik.');
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat statistik: ' . $e->getMessage());
         }
     }
 

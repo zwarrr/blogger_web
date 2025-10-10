@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Post;
 use App\Models\Category;
 
@@ -68,7 +69,20 @@ class AuthorPostController extends Controller
 
             \Log::info('AuthorPostController::index - Categories count: ' . $categories->count());
 
-            return view('author.posts.index', compact('posts','categories'));
+            // Calculate statistics
+            $totalPosts = $posts->count();
+            $publishedPosts = $posts->where('is_published', true)->count();
+            $draftPosts = $posts->where('is_published', false)->count();
+            $featuredPosts = $posts->where('is_featured', true)->count();
+
+            $statistics = [
+                'total' => $totalPosts,
+                'published' => $publishedPosts,
+                'draft' => $draftPosts,
+                'featured' => $featuredPosts,
+            ];
+
+            return view('author.posts.index', compact('posts', 'categories', 'statistics'));
         } catch (\Exception $e) {
             \Log::error('AuthorPostController::index - Error: ' . $e->getMessage());
             \Log::error('Stack trace: ' . $e->getTraceAsString());
@@ -78,114 +92,127 @@ class AuthorPostController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'title' => ['required','string','max:255'],
-            'category_id' => ['required','exists:categories,id'],
-            'description' => ['nullable','string'],
-            'cover' => ['nullable','image','max:5120'],
-            'location' => ['nullable','string','max:255'],
-            'published_at' => ['nullable','date'],
-            'allow_comments' => ['nullable','boolean'],
-            'is_pinned' => ['nullable','boolean'],
-            'is_featured' => ['nullable','boolean'],
-            'is_published' => ['nullable','boolean'],
-        ]);
+        try {
+            $data = $request->validate([
+                'title' => ['required','string','max:255'],
+                'category_id' => ['nullable','exists:categories,id'],
+                'description' => ['nullable','string'],
+                'cover' => ['nullable','image','mimes:jpeg,png,jpg,gif','max:5120'],
+                'location' => ['nullable','string','max:255'],
+                'published_at' => ['nullable','date'],
+                'allow_comments' => ['nullable'],
+                'is_pinned' => ['nullable'],
+                'is_featured' => ['nullable'],
+                'is_published' => ['nullable'],
+            ]);
 
-        $prefix = 'POST';
-        $last = Post::where('id', 'like', $prefix.'%')->orderBy('id', 'desc')->value('id');
-        $num = 0;
-        if ($last && preg_match('/^'.preg_quote($prefix, '/').'([0-9]{3,})$/', $last, $m)) {
-            $num = intval($m[1]);
-        }
-        $next = $prefix . str_pad((string)($num + 1), 3, '0', STR_PAD_LEFT);
+            $prefix = 'POST';
+            $last = Post::where('id', 'like', $prefix.'%')->orderBy('id', 'desc')->value('id');
+            $num = 0;
+            if ($last && preg_match('/^'.preg_quote($prefix, '/').'([0-9]{3,})$/', $last, $m)) {
+                $num = intval($m[1]);
+            }
+            $next = $prefix . str_pad((string)($num + 1), 3, '0', STR_PAD_LEFT);
 
-        $coverPath = null;
-        if ($request->hasFile('cover')) {
-            $file = $request->file('cover');
-            $base = preg_replace('/[^a-z0-9]+/i', '-', strtolower($data['title']));
-            $base = trim($base, '-');
-            $ext = $file->getClientOriginalExtension();
-            $filename = $base ? ($base.'-'.uniqid().'.'.$ext) : ('post-'.uniqid().'.'.$ext);
-            $coverPath = $file->storeAs('posts', $filename, 'public');
-        }
+            $coverPath = null;
+            if ($request->hasFile('cover')) {
+                $file = $request->file('cover');
+                $base = preg_replace('/[^a-z0-9]+/i', '-', strtolower($data['title']));
+                $base = trim($base, '-');
+                $ext = $file->getClientOriginalExtension();
+                $filename = $base ? ($base.'-'.uniqid().'.'.$ext) : ('post-'.uniqid().'.'.$ext);
+                $coverPath = $file->storeAs('photos', $filename, 'public');
+            }
 
-        Post::create([
-            'id' => $next,
-            'cover_image' => $coverPath,
-            'title' => $data['title'],
-            'category_id' => $data['category_id'],
-            'description' => $data['description'] ?? null,
-            'location' => $data['location'] ?? null,
-            'published_at' => $data['published_at'] ?? null,
-            'allow_comments' => (bool)($data['allow_comments'] ?? false),
-            'is_pinned' => (bool)($data['is_pinned'] ?? false),
-            'is_featured' => (bool)($data['is_featured'] ?? false),
-            'is_published' => (bool)($data['is_published'] ?? false),
-            'author' => auth('web')->user()->name,
-        ]);
+            Post::create([
+                'id' => $next,
+                'cover_image' => $coverPath,
+                'title' => $data['title'],
+                'category_id' => $data['category_id'],
+                'description' => $data['description'] ?? null,
+                'location' => $data['location'] ?? null,
+                'published_at' => $data['published_at'] ?? null,
+                'allow_comments' => (bool)($data['allow_comments'] ?? false),
+                'is_pinned' => (bool)($data['is_pinned'] ?? false),
+                'is_featured' => (bool)($data['is_featured'] ?? false),
+                'is_published' => (bool)($data['is_published'] ?? false),
+                'author' => auth('web')->user()->name,
+            ]);
 
-        if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Post created successfully.']);
+            
+        } catch (\Exception $e) {
+            \Log::error('AuthorPostController::store - Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan post.'], 422);
         }
-        return back()->with('status', 'Post created successfully.');
     }
 
     public function update(Request $request, string $id)
     {
-        $data = $request->validate([
-            'title' => ['required','string','max:255'],
-            'category_id' => ['required','exists:categories,id'],
-            'description' => ['nullable','string'],
-            'cover' => ['nullable','image','max:5120'],
-            'location' => ['nullable','string','max:255'],
-            'published_at' => ['nullable','date'],
-            'allow_comments' => ['nullable','boolean'],
-            'is_pinned' => ['nullable','boolean'],
-            'is_featured' => ['nullable','boolean'],
-            'is_published' => ['nullable','boolean'],
-        ]);
+        try {
+            $data = $request->validate([
+                'title' => ['required','string','max:255'],
+                'category_id' => ['nullable','exists:categories,id'],
+                'description' => ['nullable','string'],
+                'cover' => ['nullable','image','mimes:jpeg,png,jpg,gif','max:5120'],
+                'location' => ['nullable','string','max:255'],
+                'published_at' => ['nullable','date'],
+                'allow_comments' => ['nullable'],
+                'is_pinned' => ['nullable'],
+                'is_featured' => ['nullable'],
+                'is_published' => ['nullable'],
+            ]);
 
-        $post = Post::where('id',$id)->where('author', auth('web')->user()->name)->firstOrFail();
+            $post = Post::where('id',$id)->where('author', auth('web')->user()->name)->firstOrFail();
 
-        $coverPath = $post->cover_image;
-        if ($request->hasFile('cover')) {
-            if ($coverPath && \Storage::disk('public')->exists($coverPath)) {
-                \Storage::disk('public')->delete($coverPath);
+            $coverPath = $post->cover_image;
+            if ($request->hasFile('cover')) {
+                if ($coverPath && Storage::disk('public')->exists($coverPath)) {
+                    Storage::disk('public')->delete($coverPath);
+                }
+                $file = $request->file('cover');
+                $base = preg_replace('/[^a-z0-9]+/i', '-', strtolower($data['title']));
+                $base = trim($base, '-');
+                $ext = $file->getClientOriginalExtension();
+                $filename = $base ? ($base.'-'.uniqid().'.'.$ext) : ('post-'.uniqid().'.'.$ext);
+                $coverPath = $file->storeAs('photos', $filename, 'public');
             }
-            $file = $request->file('cover');
-            $base = preg_replace('/[^a-z0-9]+/i', '-', strtolower($data['title']));
-            $base = trim($base, '-');
-            $ext = $file->getClientOriginalExtension();
-            $filename = $base ? ($base.'-'.uniqid().'.'.$ext) : ('post-'.uniqid().'.'.$ext);
-            $coverPath = $file->storeAs('posts', $filename, 'public');
-        }
 
-        $post->update([
-            'title' => $data['title'],
-            'category_id' => $data['category_id'],
-            'cover_image' => $coverPath,
-            'description' => $data['description'] ?? null,
-            'location' => $data['location'] ?? null,
-            'published_at' => $data['published_at'] ?? null,
-            'allow_comments' => (bool)($data['allow_comments'] ?? false),
-            'is_pinned' => (bool)($data['is_pinned'] ?? false),
-            'is_featured' => (bool)($data['is_featured'] ?? false),
-            'is_published' => (bool)($data['is_published'] ?? false),
-        ]);
+            $post->update([
+                'title' => $data['title'],
+                'category_id' => $data['category_id'],
+                'cover_image' => $coverPath,
+                'description' => $data['description'] ?? null,
+                'location' => $data['location'] ?? null,
+                'published_at' => $data['published_at'] ?? null,
+                'allow_comments' => (bool)($data['allow_comments'] ?? false),
+                'is_pinned' => (bool)($data['is_pinned'] ?? false),
+                'is_featured' => (bool)($data['is_featured'] ?? false),
+                'is_published' => (bool)($data['is_published'] ?? false),
+            ]);
 
-        if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Post updated successfully.']);
+            
+        } catch (\Exception $e) {
+            \Log::error('AuthorPostController::update - Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui post.'], 422);
         }
-        return back()->with('status', 'Post updated successfully.');
     }
 
     public function destroy(string $id)
     {
-        $post = Post::where('id',$id)->where('author', auth('web')->user()->name)->firstOrFail();
-        if ($post->cover_image && \Storage::disk('public')->exists($post->cover_image)) {
-            \Storage::disk('public')->delete($post->cover_image);
+        try {
+            $post = Post::where('id',$id)->where('author', auth('web')->user()->name)->firstOrFail();
+            if ($post->cover_image && Storage::disk('public')->exists($post->cover_image)) {
+                Storage::disk('public')->delete($post->cover_image);
+            }
+            $post->delete();
+            
+            return response()->json(['success' => true, 'message' => 'Post deleted successfully.']);
+            
+        } catch (\Exception $e) {
+            \Log::error('AuthorPostController::destroy - Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menghapus post.'], 422);
         }
-        $post->delete();
-        return back()->with('status', 'Post deleted successfully.');
     }
 }

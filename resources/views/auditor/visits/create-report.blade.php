@@ -56,8 +56,8 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
                         Jadwal Kunjungan
                     </label>
-                    <div class="text-gray-900 font-medium">{{ \Carbon\Carbon::parse($visit->tanggal_kunjungan)->format('d M Y') }}</div>
-                    <div class="text-sm text-gray-600">{{ \Carbon\Carbon::parse($visit->tanggal_kunjungan)->format('H:i') }} WIB</div>
+                    <div class="text-gray-900 font-medium">{{ \Carbon\Carbon::parse($visit->visit_date)->format('d M Y') }}</div>
+                    <div class="text-sm text-gray-600">{{ \Carbon\Carbon::parse($visit->visit_date)->format('H:i') }} WIB</div>
                 </div>
                 
                 <!-- Alamat/Lokasi -->

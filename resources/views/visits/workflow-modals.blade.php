@@ -1,3 +1,23 @@
+<!-- Minimal placeholder for workflow modals used across visits views -->
+{{-- This partial provides modal markup hooks for visit workflow actions (approve/reject/cancel).
+     Keberadaan file ini mencegah error "View not found" dan menyediakan struktur dasar yang
+     bisa diisi nanti tanpa menyebabkan 500. --}}
+
+@if(isset($visits) && $visits->count() > 0)
+    @foreach($visits as $visit)
+        <!-- Modal wrapper (hidden by default) -->
+        <div id="workflow-modal-{{ $visit->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="bg-black bg-opacity-50 absolute inset-0"></div>
+            <div class="relative bg-white rounded-lg shadow-lg max-w-lg w-full p-6">
+                <h3 class="text-lg font-semibold">Aksi Workflow untuk #{{ $visit->id }}</h3>
+                <p class="text-sm text-gray-600 mt-2">Gunakan modal ini untuk menampilkan konfirmasi approve/reject/cancel.</p>
+                <div class="mt-4 flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('workflow-modal-{{ $visit->id }}').classList.add('hidden')" class="px-4 py-2 bg-gray-200 rounded">Tutup</button>
+                </div>
+            </div>
+        </div>
+    @endforeach
+@endif
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>

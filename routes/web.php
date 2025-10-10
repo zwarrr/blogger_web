@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\AdminCommentController;
+
 use App\Http\Controllers\Auth\AuthorAuthController;
 use App\Http\Controllers\AuthorDashboardController;
 use App\Http\Controllers\AuthorPostController;
@@ -29,7 +30,117 @@ Route::get('/test-author-login', function () {
     return view('test-author-login');
 });
 
+// Test route for debugging admin visits (remove after testing)
+// Route::get('/test-admin-visits', [AdminVisitController::class, 'index'])->name('test.admin.visits');
 
+// Temporary test route for debugging the visits view
+Route::get('/test-visits-view', function () {
+    // Create mock paginated visits data
+    $visitsData = collect([
+        (object)[
+            'id' => 1,
+            'visit_date' => '2025-10-15 10:00:00',
+            'visit_time' => '10:00:00',
+            'location_address' => 'Jl. Sudirman No. 123, Jakarta Pusat',
+            'status' => 'belum_dikunjungi',
+            'author_id' => 1,
+            'author_name' => 'Budi Santoso'
+        ],
+        (object)[
+            'id' => 2,
+            'visit_date' => '2025-10-16 14:00:00',
+            'visit_time' => '14:00:00',
+            'location_address' => 'Jl. Thamrin No. 456, Jakarta Pusat',
+            'status' => 'dalam_perjalanan',
+            'author_id' => 1,
+            'author_name' => 'Budi Santoso'
+        ],
+        (object)[
+            'id' => 3,
+            'visit_date' => '2025-10-17 09:00:00',
+            'visit_time' => '09:00:00',
+            'location_address' => 'Jl. Gatot Subroto No. 789, Jakarta Selatan',
+            'status' => 'selesai',
+            'author_id' => 1,
+            'author_name' => 'Budi Santoso'
+        ]
+    ]);
+
+    // Create a mock paginator
+    $visits = new \Illuminate\Pagination\LengthAwarePaginator(
+        $visitsData,
+        3,
+        10,
+        1,
+        ['path' => request()->url()]
+    );
+
+    return view('author.visits.index', [
+        'totalVisits' => 3,
+        'belumDikunjungi' => 1,
+        'dalamPerjalanan' => 1,
+        'selesai' => 1,
+        'sedangDikunjungi' => 0,
+        'menungguAcc' => 0,
+        'visits' => $visits,
+        'statuses' => ['belum_dikunjungi', 'dalam_perjalanan', 'selesai']
+    ]);
+});
+
+// Quick access to author visits without login (for testing only)
+Route::get('/author-visits-demo', function () {
+    $visitsData = collect([
+        (object)[
+            'id' => 1,
+            'visit_date' => '2025-10-15 10:00:00',
+            'visit_time' => '10:00:00',
+            'location_address' => 'Jl. Sudirman No. 123, Jakarta Pusat',
+            'status' => 'belum_dikunjungi',
+            'author_id' => 1,
+            'author_name' => 'Budi Santoso'
+        ],
+        (object)[
+            'id' => 2,
+            'visit_date' => '2025-10-16 14:00:00',
+            'visit_time' => '14:00:00',
+            'location_address' => 'Jl. Thamrin No. 456, Jakarta Pusat',
+            'status' => 'dalam_perjalanan',
+            'author_id' => 1,
+            'author_name' => 'Budi Santoso'
+        ]
+    ]);
+
+    $visits = new \Illuminate\Pagination\LengthAwarePaginator(
+        $visitsData, 2, 10, 1, ['path' => request()->url()]
+    );
+
+    return view('author.visits.index', [
+        'totalVisits' => 2, 'belumDikunjungi' => 1, 'dalamPerjalanan' => 1, 
+        'selesai' => 0, 'sedangDikunjungi' => 0, 'menungguAcc' => 0,
+        'visits' => $visits, 'statuses' => ['belum_dikunjungi', 'dalam_perjalanan', 'selesai']
+    ]);
+});
+
+// Test route untuk demo edit page dengan Leaflet map
+Route::get('/test-edit-visit', function () {
+    // Create a mock visit object for testing
+    $visit = (object) [
+        'id' => 1,
+        'author_name' => 'John Doe',
+        'auditor_name' => 'Jane Smith', 
+        'location_address' => 'Jl. Sudirman No. 123, Jakarta Pusat',
+        'latitude' => -6.208763,
+        'longitude' => 106.845599,
+        'visit_date' => now(),
+        'status' => 'confirmed',
+        'notes' => 'Ini adalah catatan demo untuk testing halaman edit dengan Leaflet map',
+        'photos' => ['demo1.jpg', 'demo2.jpg'],
+        'created_at' => now(),
+        'updated_at' => now()
+    ];
+    
+    return view('admin.visits.edit', compact('visit'));
+});
 
 Route::get('/authors-table-data', function () {
     $authors = App\Models\Author::orderBy('created_at', 'desc')->get();
@@ -81,7 +192,7 @@ Route::get('/admin/login', function() {
 });
 Route::get('/auditor/login', function() {
     return redirect()->route('auth.login');
-});
+})->name('auditor.login');
 Route::get('/author/login', function() {
     return redirect()->route('auth.login');
 });
@@ -107,30 +218,65 @@ Route::prefix('admin')->middleware(['web', 'admin'])->group(function () {
     Route::post('/comments/{id}/toggle', [AdminCommentController::class, 'toggleVisibility'])->name('admin.comments.toggle');
     Route::delete('/comments/{id}', [AdminCommentController::class, 'destroy'])->name('admin.comments.destroy');
 
-    // Visit Management
+    // Log Management - Coming Soon
+    // Route::get('/logs/error', [AdminLogController::class, 'errorLogs'])->name('admin.logs.error');
+
+    // Visit Management - specific routes first, then parameterized routes
     Route::get('/visits', [AdminVisitController::class, 'index'])->name('admin.visits.index');
     Route::get('/visits/create', [AdminVisitController::class, 'create'])->name('admin.visits.create');
     Route::post('/visits', [AdminVisitController::class, 'store'])->name('admin.visits.store');
-    Route::get('/visits/{visit}', [AdminVisitController::class, 'show'])->name('admin.visits.show');
-    Route::get('/visits/{visit}/edit', [AdminVisitController::class, 'edit'])->name('admin.visits.edit');
-    Route::put('/visits/{visit}', [AdminVisitController::class, 'update'])->name('admin.visits.update');
-    Route::post('/visits/{visit}/status', [AdminVisitController::class, 'updateStatus'])->name('admin.visits.status');
-    Route::post('/visits/{visit}/approve', [AdminVisitController::class, 'approve'])->name('admin.visits.approve');
-    Route::post('/visits/{visit}/reject', [AdminVisitController::class, 'reject'])->name('admin.visits.reject');
+    Route::get('/visits/{visit}/json', [AdminVisitController::class, 'showJson'])->name('admin.visits.show.json')->where('visit', '[0-9]+');
+    Route::get('/visits/{visit}/edit', [AdminVisitController::class, 'edit'])->name('admin.visits.edit')->where('visit', '[0-9]+');
+    Route::get('/visits/{visit}', [AdminVisitController::class, 'show'])->name('admin.visits.show')->where('visit', '[0-9]+');
+    Route::put('/visits/{visit}', [AdminVisitController::class, 'update'])->name('admin.visits.update')->where('visit', '[0-9]+');
+    Route::post('/visits/{visit}/status', [AdminVisitController::class, 'updateStatus'])->name('admin.visits.status')->where('visit', '[0-9]+');
+    Route::post('/visits/{visit}/approve', [AdminVisitController::class, 'approve'])->name('admin.visits.approve')->where('visit', '[0-9]+');
+    Route::post('/visits/{visit}/reject', [AdminVisitController::class, 'reject'])->name('admin.visits.reject')->where('visit', '[0-9]+');
+    Route::post('/visits/{visit}/complete', [AdminVisitController::class, 'complete'])->name('admin.visits.complete')->where('visit', '[0-9]+');
     
     // Visit report approval
-    Route::post('/visits/{visit}/approve-report', [AdminVisitController::class, 'approveReport'])->name('admin.visits.approve-report');
-    Route::post('/visits/{visit}/reject-report', [AdminVisitController::class, 'rejectReport'])->name('admin.visits.reject-report');
-    Route::delete('/visits/{visit}/photo/{photoIndex}', [AdminVisitController::class, 'removePhoto'])->name('admin.visits.photo.remove');
-    Route::delete('/visits/{visit}', [AdminVisitController::class, 'destroy'])->name('admin.visits.destroy');
-    Route::patch('/visits/{visit}/cancel', [AdminVisitController::class, 'cancel'])->name('admin.visits.cancel');
+    Route::post('/visits/{visit}/approve-report', [AdminVisitController::class, 'approveReport'])->name('admin.visits.approve-report')->where('visit', '[0-9]+');
+    Route::post('/visits/{visit}/reject-report', [AdminVisitController::class, 'rejectReport'])->name('admin.visits.reject-report')->where('visit', '[0-9]+');
+    Route::delete('/visits/{visit}/photo/{photoIndex}', [AdminVisitController::class, 'removePhoto'])->name('admin.visits.photo.remove')->where('visit', '[0-9]+');
+    Route::delete('/visits/{visit}', [AdminVisitController::class, 'destroy'])->name('admin.visits.destroy')->where('visit', '[0-9]+');
+    Route::patch('/visits/{visit}/cancel', [AdminVisitController::class, 'cancel'])->name('admin.visits.cancel')->where('visit', '[0-9]+');
 
     // Visit Map
     Route::get('/visits-map', [AdminVisitMapController::class, 'index'])->name('admin.visits.map');
+    
+    // Debug route untuk check data Visit
+    Route::get('/debug/visits', function() {
+        $visits = \App\Models\Visit::with(['author', 'auditor'])->get();
+        
+        $debug = [
+            'total_visits' => $visits->count(),
+            'visits_with_coords' => $visits->filter(function($visit) {
+                return $visit->latitude && $visit->longitude && 
+                       $visit->latitude != 0 && $visit->longitude != 0;
+            })->count(),
+            'sample_visits' => $visits->take(5)->map(function($visit) {
+                return [
+                    'id' => $visit->id,
+                    'visit_id' => $visit->visit_id,
+                    'author' => $visit->author ? $visit->author->name : null,
+                    'auditor' => $visit->auditor ? $visit->auditor->name : null,
+                    'latitude' => $visit->latitude,
+                    'longitude' => $visit->longitude,
+                    'location_address' => $visit->location_address,
+                    'status' => $visit->status,
+                    'created_at' => $visit->created_at
+                ];
+            }),
+            'status_distribution' => $visits->groupBy('status')->map->count()
+        ];
+        
+        return response()->json($debug, 200, [], JSON_PRETTY_PRINT);
+    });
 
     // Visit Reports & Statistics
     Route::get('/visits-reports', [AdminVisitReportController::class, 'index'])->name('admin.visits.reports');
     Route::get('/visits-export', [AdminVisitReportController::class, 'export'])->name('admin.visits.export');
+    Route::get('/visits-export-pdf', [AdminVisitReportController::class, 'exportToPdf'])->name('admin.visits.export-pdf');
 });
 
 // Author protected routes
@@ -149,11 +295,12 @@ Route::prefix('author')->middleware(['web', 'author'])->group(function () {
     Route::get('/visits', [AuthorVisitController::class, 'index'])->name('author.visits.index');
     Route::get('/visits/{visit}', [AuthorVisitController::class, 'show'])->name('author.visits.show');
     Route::get('/visits/{visit}/detail', [AuthorVisitController::class, 'detail'])->name('author.visits.detail');
+    Route::get('/visits/{visit}/modal-detail', [AuthorVisitController::class, 'getModalDetail'])->name('author.visits.modal-detail');
     
     // Author workflow routes
     // Author Actions - New Logic Flow
-    Route::patch('/visits/{visit}/confirm', [AuthorVisitActionController::class, 'confirm'])->name('author.visits.confirm');
-    Route::patch('/visits/{visit}/reschedule', [AuthorVisitActionController::class, 'reschedule'])->name('author.visits.reschedule');
+    Route::patch('/visits/{visit}/confirm', [AuthorVisitController::class, 'confirm'])->name('author.visits.confirm');
+    Route::patch('/visits/{visit}/reschedule', [AuthorVisitController::class, 'reschedule'])->name('author.visits.reschedule');
 });
 
 // Auditor protected routes
@@ -169,7 +316,7 @@ Route::prefix('auditor')->middleware(['web', 'auditor'])->group(function () {
     // Visit workflow management
     // Auditor Actions - New Logic Flow
     Route::patch('/visits/{visit}/start', [AuditorVisitController::class, 'start'])->name('auditor.visits.start');
-    Route::patch('/visits/{visit}/complete', [AuditorVisitActionController::class, 'complete'])->name('auditor.visits.complete');
+    Route::match(['POST', 'PATCH'], '/visits/{visit}/complete', [AuditorVisitActionController::class, 'complete'])->name('auditor.visits.complete');
     
     // Visit status management (legacy)
     Route::patch('/visits/{visit}/status', [AuditorVisitController::class, 'updateStatus'])->name('auditor.visits.update-status');

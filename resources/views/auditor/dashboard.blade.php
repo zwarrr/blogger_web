@@ -93,11 +93,11 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Pending</p>
-                                <p class="text-2xl font-bold text-yellow-600 mt-2">{{ $pendingVisits ?? 0 }}</p>
+                                <p class="text-2xl font-bold text-black-600 mt-2">{{ $pendingVisits ?? 0 }}</p>
                                 <p class="text-xs text-gray-500 mt-1">Butuh review</p>
                             </div>
-                            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
@@ -109,7 +109,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Dikonfirmasi</p>
-                                <p class="text-2xl font-bold text-primary-600 mt-2">{{ $confirmedVisits ?? 0 }}</p>
+                                <p class="text-2xl font-bold text-black-600 mt-2">{{ $confirmedVisits ?? 0 }}</p>
                                 <p class="text-xs text-gray-500 mt-1">Sudah dikonfirmasi</p>
                             </div>
                             <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -125,11 +125,11 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Selesai</p>
-                                <p class="text-2xl font-bold text-green-600 mt-2">{{ $completedVisits ?? 0 }}</p>
+                                <p class="text-2xl font-bold text-black-600 mt-2">{{ $completedVisits ?? 0 }}</p>
                                 <p class="text-xs text-gray-500 mt-1">Telah selesai</p>
                             </div>
-                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                 </svg>
                             </div>
@@ -144,7 +144,7 @@
                         <div class="p-6 border-b border-gray-200">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-lg font-semibold text-gray-900">Kunjungan Terbaru</h3>
-                                <a href="{{ route('auditor.visits.index') }}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                                <a href="{{ route('auditor.visits.index') }}" class="text-sm text-black-600 hover:text-black-700 font-medium">
                                     Lihat Semua
                                 </a>
                             </div>
@@ -167,7 +167,7 @@
                                                 </div>
                                             </div>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                @if($visit->status == 'pending') bg-yellow-100 text-yellow-800
+                                                @if($visit->status == 'pending') bg-orange-100 text-black-800
                                                 @elseif($visit->status == 'konfirmasi') bg-blue-100 text-blue-800
                                                 @elseif($visit->status == 'selesai') bg-green-100 text-green-800
                                                 @else bg-gray-100 text-gray-800 @endif">
@@ -214,7 +214,7 @@
                                                 </div>
                                             </div>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                @if($visit->status == 'pending') bg-yellow-100 text-yellow-800
+                                                @if($visit->status == 'pending') bg-orange-100 text-orange-800
                                                 @elseif($visit->status == 'konfirmasi') bg-blue-100 text-blue-800
                                                 @elseif($visit->status == 'selesai') bg-green-100 text-green-800
                                                 @else bg-gray-100 text-gray-800 @endif">
@@ -252,18 +252,20 @@
                             </div>
                         </a>
 
-                        <a href="{{ route('auditor.visits.map') }}" class="flex items-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-medium text-gray-900">Peta Kunjungan</h4>
-                                <p class="text-xs text-gray-500">Lihat lokasi kunjungan di peta</p>
-                            </div>
-                        </a>
+                       <button @click="showComingSoonModal = true" class="flex items-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow w-full text-left">
+    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+    </div>
+    <div class="flex-1">
+        <h4 class="text-sm font-medium text-gray-900">Peta Kunjungan</h4>
+        <p class="text-xs text-gray-500">Lihat lokasi kunjungan di peta</p>
+    </div>
+    <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Soon</span>
+</button>
+
 
                         <a href="{{ route('auditor.visits.statistics') }}" class="flex items-center p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                             <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
