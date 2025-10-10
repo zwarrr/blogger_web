@@ -86,7 +86,7 @@
         @endforeach
 
         <div style="margin-top: 30px; padding: 20px; background: #fff; border-radius: 8px;">
-            <h3>🔐 Login Credentials untuk Testing:</h3>
+            <h3>🔐 Login Credentials:</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
                     <h4>Author 1:</h4>

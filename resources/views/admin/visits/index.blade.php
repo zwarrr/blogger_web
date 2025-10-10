@@ -328,7 +328,7 @@
                                         <td class="px-4 py-3">
                                             <div class="flex justify-center">
                                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-100 shadow-sm">
-                                                    <span>#{{ $visit->id }}</span>
+                                                    <span>{{ $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}</span>
                                                 </span>
                                             </div>
                                         </td>
@@ -577,20 +577,78 @@
                 filters: { auditor_filter:'', status_filter:'', date_filter:'', search:'' },
                 applyFilters() {
                     this.loading = true;
-                    const params = new URLSearchParams();
-                    Object.keys(this.filters).forEach(k=>{ if (this.filters[k]) params.set(k,this.filters[k]) });
-                    const url = `${window.location.pathname}?${params.toString()}`;
+                    var params = new URLSearchParams();
+                    Object.keys(this.filters).forEach(function(k){ if (this.filters[k]) params.set(k,this.filters[k]) }.bind(this));
+                    var url = window.location.pathname + '?' + params.toString();
                     fetch(url, { headers: {'X-Requested-With':'XMLHttpRequest'} })
-                        .then(r=>r.json()).then(data=>{ document.getElementById('visits-table-body').innerHTML = data.html; this.loading=false; feather.replace() }).catch(e=>{ console.error(e); this.loading=false });
+                        .then(function(r){ return r.json() }).then(function(data){ 
+                            document.getElementById('visits-table-body').innerHTML = data.html; 
+                            this.loading=false; 
+                            feather.replace();
+                            // Sort table after content update
+                            setTimeout(function() {
+                                sortTableByVSTId();
+                            }, 50);
+                        }.bind(this)).catch(function(e){ console.error(e); this.loading=false }.bind(this));
                 }
             }
         }
 
 
+        // Sort table by VST ID - Enhanced to regenerate sequential VST IDs for role-specific data
+        function sortTableByVSTId() {
+            console.log('Starting VST ID sorting for Admin panel...');
+            var tbody = document.getElementById('visits-table-body');
+            if (!tbody) {
+                console.log('Table body not found');
+                return;
+            }
+            
+            var rows = Array.from(tbody.querySelectorAll('tr')).filter(row => {
+                // Only process data rows (skip empty or header rows)
+                var vstIdCell = row.querySelector('td:nth-child(2) span span');
+                return vstIdCell && vstIdCell.textContent.trim().startsWith('VST');
+            });
+            
+            console.log('Found ' + rows.length + ' VST rows to sort');
+            if (rows.length === 0) return;
+            
+            // Sort rows by current DOM order (maintain server-side ordering) and assign sequential VST IDs
+            // Server already provides proper ordering (newest first), so we maintain that order
+            // and just assign VST0001, VST0002, etc. based on current position
+            
+            // Clear tbody and append rows with sequential VST IDs starting from VST0001
+            // The rows are already in the correct order from server (newest first)
+            tbody.innerHTML = '';
+            rows.forEach(function(row, index) {
+                // Update row number in first column to be sequential (1, 2, 3...)
+                var rowNumberCell = row.querySelector('td:first-child .text-xs.text-gray-600');
+                if (rowNumberCell) {
+                    rowNumberCell.textContent = (index + 1);
+                }
+                
+                // Update VST ID to be sequential starting from VST0001
+                var vstIdCell = row.querySelector('td:nth-child(2) span span');
+                if (vstIdCell) {
+                    // Store original VST ID as data attribute for backend operations before changing
+                    if (!vstIdCell.getAttribute('data-original-vst')) {
+                        vstIdCell.setAttribute('data-original-vst', vstIdCell.textContent.trim());
+                    }
+                    
+                    var newVstId = 'VST' + String(index + 1).padStart(4, '0');
+                    vstIdCell.textContent = newVstId;
+                }
+                
+                tbody.appendChild(row);
+            });
+            
+            console.log('VST ID sorting completed for Admin panel with sequential VST IDs');
+        }
+
         function toggleDropdown(id) {
-            const dropdown = document.getElementById(`dropdown-${id}`);
-            const button = document.querySelector(`[onclick="toggleDropdown(${id})"]`);
-            const isHidden = dropdown.classList.contains('hidden');
+            var dropdown = document.getElementById('dropdown-' + id);
+            var button = document.querySelector('[onclick="toggleDropdown(' + id + ')"]');
+            var isHidden = dropdown.classList.contains('hidden');
             
             // Close all dropdowns first
             document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
@@ -607,15 +665,15 @@
             
             if (isHidden && button && dropdown) {
                 // Get button position and viewport info
-                const buttonRect = button.getBoundingClientRect();
-                const viewportHeight = window.innerHeight;
-                const viewportWidth = window.innerWidth;
-                const dropdownHeight = 120; // Estimated dropdown height
-                const dropdownWidth = 180;
+                var buttonRect = button.getBoundingClientRect();
+                var viewportHeight = window.innerHeight;
+                var viewportWidth = window.innerWidth;
+                var dropdownHeight = 120; // Estimated dropdown height
+                var dropdownWidth = 180;
                 
                 // Check if there's enough space below
-                const spaceBelow = viewportHeight - buttonRect.bottom;
-                const spaceAbove = buttonRect.top;
+                var spaceBelow = viewportHeight - buttonRect.bottom;
+                var spaceAbove = buttonRect.top;
                 
                 dropdown.style.position = 'absolute';
                 dropdown.style.zIndex = '99999';
@@ -632,8 +690,8 @@
                 }
                 
                 // Horizontal positioning
-                const buttonCenter = buttonRect.left + (buttonRect.width / 2);
-                const dropdownLeft = buttonCenter - (dropdownWidth / 2);
+                var buttonCenter = buttonRect.left + (buttonRect.width / 2);
+                var dropdownLeft = buttonCenter - (dropdownWidth / 2);
                 
                 if (dropdownLeft < 10) {
                     // Too far left
@@ -659,25 +717,29 @@
 
         function showDetailModal(id) {
             // Close any open dropdowns
-            document.querySelectorAll('[id^="dropdown-"]').forEach(d=>d.classList.add('hidden'));
+            document.querySelectorAll('[id^="dropdown-"]').forEach(function(d) {
+                d.classList.add('hidden');
+            });
             
             // Show loading in modal
-            const modal = document.getElementById('detailModal');
-            const modalBody = document.getElementById('modalBody');
+            var modal = document.getElementById('detailModal');
+            var modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = '<div class="flex justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div></div>';
             modal.classList.remove('hidden');
             
             // Fetch visit details
-            fetch(`/admin/visits/${id}/json`)
-                .then(response => response.json())
-                .then(data => {
+            fetch('/admin/visits/' + id + '/json')
+                .then(function(response) { 
+                    return response.json();
+                })
+                .then(function(data) {
                     modalBody.innerHTML = generateModalContent(data);
                     feather.replace();
                     
                     // Initialize maps after modal content is loaded
                     setTimeout(initializePendingMaps, 100);
                 })
-                .catch(error => {
+                .catch(function(error) {
                     modalBody.innerHTML = '<div class="text-red-600 text-center py-4">Gagal memuat detail kunjungan</div>';
                 });
         }
@@ -688,7 +750,9 @@
 
         function deleteVisit(id) {
             // Close any open dropdowns
-            document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
+            document.querySelectorAll('[id^="dropdown-"]').forEach(function(d) {
+                d.classList.add('hidden');
+            });
             
             // Show delete confirmation modal
             showDeleteModal(id);
@@ -696,7 +760,9 @@
 
         function completeVisit(id) {
             // Close any open dropdowns
-            document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
+            document.querySelectorAll('[id^="dropdown-"]').forEach(function(d) {
+                d.classList.add('hidden');
+            });
             
             if (confirm('Apakah Anda yakin ingin menyelesaikan kunjungan ini?')) {
                 // Update status to selesai
@@ -707,8 +773,10 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
+                .then(function(response) { 
+                    return response.json();
+                })
+                .then(function(data) {
                     if (data.success) {
                         showNotification('Kunjungan berhasil diselesaikan', 'success');
                         location.reload();
@@ -716,7 +784,7 @@
                         showNotification(data.message || 'Terjadi kesalahan', 'error');
                     }
                 })
-                .catch(error => {
+                .catch(function(error) {
                     console.error('Error:', error);
                     showNotification('Terjadi kesalahan sistem', 'error');
                 });
@@ -724,8 +792,8 @@
         }
 
         function showDeleteModal(visitId) {
-            const modal = document.getElementById('deleteModal');
-            const confirmButton = document.getElementById('confirmDeleteBtn');
+            var modal = document.getElementById('deleteModal');
+            var confirmButton = document.getElementById('confirmDeleteBtn');
             
             // Set the visit ID for confirmation
             confirmButton.onclick = function() {
@@ -745,21 +813,21 @@
             closeDeleteModal();
             
             // Create form for DELETE request
-            const form = document.createElement('form');
+            var form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/admin/visits/${id}`;
+            form.action = '/admin/visits/' + id;
             form.style.display = 'none';
             
             // Add CSRF token
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const csrfInput = document.createElement('input');
+            var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            var csrfInput = document.createElement('input');
             csrfInput.type = 'hidden';
             csrfInput.name = '_token';
             csrfInput.value = csrfToken;
             form.appendChild(csrfInput);
             
             // Add DELETE method
-            const methodInput = document.createElement('input');
+            var methodInput = document.createElement('input');
             methodInput.type = 'hidden';
             methodInput.name = '_method';
             methodInput.value = 'DELETE';
@@ -777,6 +845,7 @@
                 'sedang_dikunjungi': { color: 'orange', text: 'Sedang Dikunjungi' },
                 'dalam_perjalanan': { color: 'orange', text: 'Dalam Perjalanan' },
                 'belum_dikunjungi': { color: 'orange', text: 'Belum Dikunjungi' },
+                'reschedule': { color: 'amber', text: 'Reschedule' },
                 'completed': { color: 'orange', text: 'Selesai' },
                 'in_progress': { color: 'orange', text: 'Berlangsung' },
                 'pending': { color: 'orange', text: 'Menunggu' }
@@ -791,7 +860,7 @@
             content += '<div class="grid grid-cols-2 gap-4">';
             content += '<div>';
             content += '<label class="block text-xs font-medium text-gray-700 mb-1">ID Kunjungan</label>';
-            content += '<div class="text-sm font-semibold text-gray-900">' + (visit.visit_id || '#' + visit.id) + '</div>';
+            content += '<div class="text-sm font-semibold text-gray-900">' + (visit.visit_id || 'VST' + String(visit.id).padStart(4, '0')) + '</div>';
             content += '</div>';
             content += '<div>';
             content += '<label class="block text-xs font-medium text-gray-700 mb-1">Status</label>';
@@ -801,29 +870,163 @@
             content += '</div>';
             content += '</div>';
             
-            // Date and Duration
-            content += '<div class="grid grid-cols-2 gap-4">';
+            // Date Information with Reschedule Info
+            content += '<div class="grid grid-cols-1 gap-4">';
             content += '<div>';
-            content += '<label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Kunjungan</label>';
-            content += '<div class="text-sm font-medium text-gray-900">' + visitDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + '</div>';
-            content += '<div class="text-xs text-gray-600">' + visitDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB</div>';
-            content += '</div>';
-            if (visit.report && (visit.report.visit_start_time || visit.report.visit_end_time)) {
-                content += '<div>';
-                content += '<label class="block text-xs font-medium text-gray-700 mb-1">Waktu Kunjungan</label>';
-                if (visit.report.visit_start_time) {
-                    content += '<div class="text-xs text-gray-600">Mulai: ' + new Date(visit.report.visit_start_time).toLocaleTimeString('id-ID') + '</div>';
-                }
-                if (visit.report.visit_end_time) {
-                    content += '<div class="text-xs text-gray-600">Selesai: ' + new Date(visit.report.visit_end_time).toLocaleTimeString('id-ID') + '</div>';
-                }
+            content += '<label class="block text-xs font-medium text-gray-700 mb-1">Jadwal Kunjungan</label>';
+            content += '<div class="text-sm font-medium text-gray-900">' + visitDate.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            }) + '</div>';
+            content += '<div class="text-xs text-gray-600">Pukul ' + visitDate.toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            }) + ' WIB</div>';
+            
+            // Show reschedule information if available
+            if (visit.reschedule_count && visit.reschedule_count > 0) {
+                content += '<div class="mt-3">';
+                content += '<div class="bg-amber-50 border border-amber-200 rounded-lg p-3">';
+                content += '<div class="flex items-center mb-2">';
+                content += '<svg class="w-4 h-4 text-amber-600 mr-2" fill="currentColor" viewBox="0 0 20 20">';
+                content += '<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>';
+                content += '</svg>';
+                content += '<span class="text-sm font-semibold text-amber-800">Riwayat Reschedule</span>';
                 content += '</div>';
-            } else {
-                content += '<div>';
-                content += '<label class="block text-xs font-medium text-gray-700 mb-1">Durasi</label>';
-                content += '<div class="text-sm font-medium text-gray-900">' + (visit.duration || 'Belum ditentukan') + '</div>';
+                
+                content += '<div class="space-y-2">';
+                
+                // Ringkasan reschedule
+                content += '<div class="text-sm text-amber-700">Total perubahan jadwal: <span class="font-medium">' + visit.reschedule_count + ' kali</span></div>';
+                
+                // Tampilkan ringkasan reschedule terakhir
+                if (visit.reschedule_reason) {
+                    content += '<div class="bg-white rounded-md p-2 border border-amber-100">';
+                    content += '<div class="text-xs font-medium text-gray-700 mb-1">Reschedule Terakhir:</div>';
+                    
+                    // Ringkasan info reschedule
+                    if (visit.rescheduled_at) {
+                        var rescheduleDate = new Date(visit.rescheduled_at);
+                        content += '<div class="text-xs text-gray-600 mb-1">';
+                        content += rescheduleDate.toLocaleDateString('id-ID', { 
+                            day: 'numeric', 
+                            month: 'short', 
+                            year: 'numeric' 
+                        });
+                        content += '</div>';
+                    }
+                    
+                    // Truncate reason if too long (show max 60 characters untuk ringkasan)
+                    var fullReason = visit.reschedule_reason;
+                    var shortReason = fullReason.length > 60 ? fullReason.substring(0, 60) + '...' : fullReason;
+                    
+                    content += '<div class="text-sm text-gray-900 mb-2">' + shortReason + '</div>';
+                    
+                    // Tombol lihat detail timeline
+                    content += '<button onclick="toggleRescheduleTimeline(' + visit.id + ')" class="text-blue-600 hover:text-blue-800 text-xs font-medium underline focus:outline-none" id="timeline-toggle-' + visit.id + '">lihat detail riwayat</button>';
+                    
+                    content += '</div>';
+                    
+                    // Timeline detail (hidden by default)
+                    content += '<div id="reschedule-timeline-' + visit.id + '" class="bg-white rounded-md border border-amber-100 mt-2" style="display: none;">';
+                    content += '<div class="p-3">';
+                    content += '<div class="text-xs font-semibold text-amber-800 mb-3 flex items-center">';
+                    content += '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">';
+                    content += '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>';
+                    content += '</svg>Timeline Riwayat Reschedule</div>';
+                    
+                    // Timeline items
+                    content += '<div class="space-y-3">';
+                    
+                    // Reschedule terakhir (detail lengkap)
+                    content += '<div class="flex">';
+                    content += '<div class="flex-shrink-0 w-2 h-2 bg-amber-400 rounded-full mt-2 mr-3"></div>';
+                    content += '<div class="flex-grow">';
+                    content += '<div class="text-xs font-medium text-gray-900">Reschedule #' + visit.reschedule_count + '</div>';
+                    if (visit.rescheduled_at) {
+                        content += '<div class="text-xs text-gray-500">' + rescheduleDate.toLocaleDateString('id-ID', { 
+                            weekday: 'long', 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                        }) + ' pukul ' + rescheduleDate.toLocaleTimeString('id-ID', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                        }) + ' WIB</div>';
+                    }
+                    content += '<div class="text-xs text-gray-700 mt-1 p-2 bg-gray-50 rounded">';
+                    content += '<strong>Alasan:</strong> ' + visit.reschedule_reason;
+                    content += '</div>';
+                    content += '</div>';
+                    content += '</div>';
+                    
+                    // Timeline item untuk kunjungan asli
+                    content += '<div class="flex">';
+                    content += '<div class="flex-shrink-0 w-2 h-2 bg-gray-300 rounded-full mt-2 mr-3"></div>';
+                    content += '<div class="flex-grow">';
+                    content += '<div class="text-xs font-medium text-gray-900">Jadwal Awal</div>';
+                    content += '<div class="text-xs text-gray-500">Kunjungan dijadwalkan pertama kali</div>';
+                    content += '<div class="text-xs text-gray-700 mt-1">Status: <span class="text-green-600">Terjadwal</span></div>';
+                    content += '</div>';
+                    content += '</div>';
+                    
+                    content += '</div>';
+                    content += '</div>';
+                    content += '</div>';
+                }
+                
+                if (visit.rescheduled_at) {
+                    var rescheduleDate = new Date(visit.rescheduled_at);
+                    content += '<div class="bg-white rounded-md p-2 border border-amber-100">';
+                    content += '<div class="text-xs font-medium text-gray-700 mb-1">Waktu Perubahan Terakhir:</div>';
+                    content += '<div class="text-sm text-gray-900">';
+                    content += rescheduleDate.toLocaleDateString('id-ID', { 
+                        weekday: 'long', 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    });
+                    content += ' pukul ' + rescheduleDate.toLocaleTimeString('id-ID', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false 
+                    }) + ' WIB</div>';
+                    content += '</div>';
+                }
+                
+
+                
+                // Show remaining reschedule attempts
+                var remainingAttempts = 3 - visit.reschedule_count;
+                if (remainingAttempts > 0) {
+                    content += '<div class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">';
+                    content += '<div class="text-xs text-blue-700">';
+                    content += '<svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">';
+                    content += '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>';
+                    content += '</svg>';
+                    content += 'Sisa kesempatan reschedule: ' + remainingAttempts + ' kali';
+                    content += '</div>';
+                    content += '</div>';
+                } else {
+                    content += '<div class="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">';
+                    content += '<div class="text-xs text-red-700">';
+                    content += '<svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">';
+                    content += '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>';
+                    content += '</svg>';
+                    content += 'Batas maksimum reschedule tercapai';
+                    content += '</div>';
+                    content += '</div>';
+                }
+                
+                content += '</div>';
+                content += '</div>';
                 content += '</div>';
             }
+            content += '</div>';
             content += '</div>';
             
             // Author and Auditor Information
@@ -1133,6 +1336,30 @@
             });
         });
         
+        // Function to refresh CSRF token
+        function refreshCSRFToken() {
+            return fetch('/refresh-csrf', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(response) {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Failed to refresh CSRF token');
+            })
+            .then(function(data) {
+                if (data.token) {
+                    document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.token);
+                    return data.token;
+                }
+                throw new Error('Invalid CSRF token response');
+            });
+        }
+
         // Global variables for ACC functionality
         var currentVisitId = null;
 
@@ -1157,6 +1384,13 @@
         function confirmApprove() {
             if (!currentVisitId) return;
 
+            // Check if CSRF token exists
+            var csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfToken || !csrfToken.getAttribute('content')) {
+                showNotification('CSRF token tidak ditemukan. Silakan refresh halaman.', 'error');
+                return;
+            }
+
             // Show loading state
             var button = document.getElementById('confirmApproveBtn');
             var originalText = button.textContent;
@@ -1168,13 +1402,71 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
+                },
+                body: JSON.stringify({})
             })
             .then(function(response) {
-                return response.json().then(function(data) {
-                    return { response: response, data: data };
-                });
+                console.log('Approve response status:', response.status);
+                console.log('Approve response headers:', response.headers.get('content-type'));
+                
+                // Check for common error statuses first
+                if (response.status === 302) {
+                    throw new Error('Session expired or redirected. Please refresh the page and try again.');
+                }
+                
+                if (response.status === 401) {
+                    throw new Error('Session expired. Please login again.');
+                }
+                
+                if (response.status === 403) {
+                    throw new Error('Access denied. You don\'t have permission for this action.');
+                }
+                
+                if (response.status === 404) {
+                    throw new Error('Visit data not found.');
+                }
+                
+                if (response.status === 419) {
+                    throw new Error('CSRF token expired. Please refresh the page and try again.');
+                }
+                
+                if (response.status >= 500) {
+                    throw new Error('Server error. Please try again later.');
+                }
+                
+                // Check if response is JSON
+                var contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then(function(data) {
+                        console.log('Approve response data:', data);
+                        return { response: response, data: data };
+                    });
+                } else {
+                    // Handle non-JSON responses (like HTML error pages)
+                    return response.text().then(function(text) {
+                        console.log('Non-JSON approve response:', text.substring(0, 200));
+                        
+                        // Check if it's a Laravel error page
+                        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                            if (text.includes('419') || text.includes('CSRF')) {
+                                throw new Error('CSRF token expired. Please refresh the page and try again.');
+                            } else if (text.includes('403')) {
+                                throw new Error('Access denied. You don\'t have permission for this action.');
+                            } else if (text.includes('500')) {
+                                throw new Error('Server error occurred. Please try again later.');
+                            } else if (text.includes('404')) {
+                                throw new Error('Visit data not found.');
+                            } else {
+                                throw new Error('Server returned an error page. Please check your connection and try again.');
+                            }
+                        }
+                        
+                        throw new Error('Server returned unexpected response format');
+                    });
+                }
             })
             .then(function(result) {
                 if (result.response.ok && result.data.success !== false) {
@@ -1193,10 +1485,32 @@
                 }
             })
             .catch(function(error) {
-                console.error('Error:', error);
-                showNotification(error.message || 'Terjadi kesalahan saat menyetujui laporan', 'error');
+                console.error('Approve Error:', error);
                 
-                // Reset button
+                // Show specific error message based on error type
+                var errorMessage = 'Terjadi kesalahan saat menyetujui laporan';
+                
+                if (error.message.includes('CSRF token expired')) {
+                    errorMessage = 'CSRF token expired. Silakan refresh halaman dan coba lagi.';
+                } else if (error.message.includes('Session expired')) {
+                    errorMessage = 'Session telah berakhir. Silakan login ulang.';
+                    // Optionally redirect to login
+                    setTimeout(function() {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else if (error.message.includes('Access denied')) {
+                    errorMessage = 'Anda tidak memiliki akses untuk melakukan aksi ini.';
+                } else if (error.message.includes('not found')) {
+                    errorMessage = 'Data kunjungan tidak ditemukan.';
+                } else if (error.message.includes('Server error')) {
+                    errorMessage = 'Terjadi kesalahan server. Silakan coba lagi dalam beberapa saat.';
+                } else if (error.message.includes('unexpected response')) {
+                    errorMessage = 'Server mengembalikan response yang tidak valid. Silakan refresh halaman dan coba lagi.';
+                }
+                
+                showNotification(errorMessage, 'error');
+                
+                // Reset button state
                 button.textContent = originalText;
                 button.disabled = false;
             });
@@ -1229,6 +1543,13 @@
             
             if (!currentVisitId) return;
 
+            // Check if CSRF token exists
+            var csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfToken || !csrfToken.getAttribute('content')) {
+                showNotification('CSRF token tidak ditemukan. Silakan refresh halaman.', 'error');
+                return;
+            }
+
             var formData = new FormData(event.target);
             var rejectionNotes = formData.get('rejection_notes');
 
@@ -1249,6 +1570,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
                 body: JSON.stringify({
@@ -1256,21 +1578,62 @@
                 })
             })
             .then(function(response) {
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers.get('content-type'));
+                console.log('Reject response status:', response.status);
+                console.log('Reject response headers:', response.headers.get('content-type'));
+                
+                // Check for common error statuses first
+                if (response.status === 302) {
+                    throw new Error('Session expired or redirected. Please refresh the page and try again.');
+                }
+                
+                if (response.status === 401) {
+                    throw new Error('Session expired. Please login again.');
+                }
+                
+                if (response.status === 403) {
+                    throw new Error('Access denied. You don\'t have permission for this action.');
+                }
+                
+                if (response.status === 404) {
+                    throw new Error('Visit data not found.');
+                }
+                
+                if (response.status === 419) {
+                    throw new Error('CSRF token expired. Please refresh the page and try again.');
+                }
+                
+                if (response.status >= 500) {
+                    throw new Error('Server error. Please try again later.');
+                }
                 
                 // Check if response is JSON
-                const contentType = response.headers.get('content-type');
+                var contentType = response.headers.get('content-type');
                 if (contentType && contentType.includes('application/json')) {
                     return response.json().then(function(data) {
-                        console.log('Response data:', data);
+                        console.log('Reject response data:', data);
                         return { response: response, data: data };
                     });
                 } else {
                     // Handle non-JSON responses (like HTML error pages)
                     return response.text().then(function(text) {
-                        console.log('Non-JSON response text:', text.substring(0, 200));
-                        throw new Error(`Server error: Expected JSON but received ${response.status} ${response.statusText}`);
+                        console.log('Non-JSON reject response:', text.substring(0, 200));
+                        
+                        // Check if it's a Laravel error page
+                        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                            if (text.includes('419') || text.includes('CSRF')) {
+                                throw new Error('CSRF token expired. Please refresh the page and try again.');
+                            } else if (text.includes('403')) {
+                                throw new Error('Access denied. You don\'t have permission for this action.');
+                            } else if (text.includes('500')) {
+                                throw new Error('Server error occurred. Please try again later.');
+                            } else if (text.includes('404')) {
+                                throw new Error('Visit data not found.');
+                            } else {
+                                throw new Error('Server returned an error page. Please check your connection and try again.');
+                            }
+                        }
+                        
+                        throw new Error('Server returned unexpected response format');
                     });
                 }
             })
@@ -1291,23 +1654,32 @@
                 }
             })
             .catch(function(error) {
-                console.error('Error:', error);
+                console.error('Reject Error:', error);
                 
-                // More specific error messages
-                let errorMessage = 'Terjadi kesalahan saat menolak laporan';
-                if (error.message.includes('Expected JSON')) {
-                    errorMessage = 'Server mengembalikan response yang tidak valid. Silakan periksa koneksi atau hubungi administrator.';
-                } else if (error.message.includes('401')) {
+                // Show specific error message based on error type
+                var errorMessage = 'Terjadi kesalahan saat menolak laporan';
+                
+                if (error.message.includes('CSRF token expired')) {
+                    errorMessage = 'CSRF token expired. Silakan refresh halaman dan coba lagi.';
+                } else if (error.message.includes('Session expired')) {
                     errorMessage = 'Session telah berakhir. Silakan login ulang.';
-                } else if (error.message.includes('403')) {
+                    // Optionally redirect to login
+                    setTimeout(function() {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else if (error.message.includes('Access denied')) {
                     errorMessage = 'Anda tidak memiliki akses untuk melakukan aksi ini.';
-                } else if (error.message.includes('404')) {
-                    errorMessage = 'Endpoint tidak ditemukan. Silakan hubungi administrator.';
+                } else if (error.message.includes('not found')) {
+                    errorMessage = 'Data kunjungan tidak ditemukan.';
+                } else if (error.message.includes('Server error')) {
+                    errorMessage = 'Terjadi kesalahan server. Silakan coba lagi dalam beberapa saat.';
+                } else if (error.message.includes('unexpected response')) {
+                    errorMessage = 'Server mengembalikan response yang tidak valid. Silakan refresh halaman dan coba lagi.';
                 }
                 
                 showNotification(errorMessage, 'error');
                 
-                // Reset button
+                // Reset button state
                 button.textContent = originalText;
                 button.disabled = false;
             });
@@ -1397,7 +1769,7 @@
         }
 
         function getNotificationClasses(type) {
-            const classes = {
+            var classes = {
                 'success': 'bg-green-50 border-green-200 text-green-800',
                 'error': 'bg-red-50 border-red-200 text-red-800',
                 'warning': 'bg-orange-50 border-orange-200 text-orange-800',
@@ -1407,7 +1779,7 @@
         }
 
         function getNotificationIcon(type) {
-            const icons = {
+            var icons = {
                 'success': '<svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
                 'error': '<svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>',
                 'warning': '<svg class="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>',
@@ -1464,9 +1836,78 @@
             window.pendingMaps = [];
         }
 
+        // Toggle reschedule timeline between summary and full detail
+        function toggleRescheduleTimeline(visitId) {
+            var timelineDiv = document.getElementById('reschedule-timeline-' + visitId);
+            var toggleBtn = document.getElementById('timeline-toggle-' + visitId);
+            
+            if (timelineDiv && toggleBtn) {
+                if (timelineDiv.style.display === 'none') {
+                    // Show timeline detail
+                    timelineDiv.style.display = 'block';
+                    toggleBtn.textContent = 'sembunyikan riwayat';
+                    
+                    // Add smooth animation
+                    timelineDiv.style.opacity = '0';
+                    timelineDiv.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        timelineDiv.style.transition = 'all 0.3s ease-out';
+                        timelineDiv.style.opacity = '1';
+                        timelineDiv.style.transform = 'translateY(0)';
+                    }, 10);
+                } else {
+                    // Hide timeline detail
+                    timelineDiv.style.transition = 'all 0.2s ease-in';
+                    timelineDiv.style.opacity = '0';
+                    timelineDiv.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        timelineDiv.style.display = 'none';
+                        toggleBtn.textContent = 'lihat detail riwayat';
+                    }, 200);
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() { 
             feather.replace();
             initializeAccFunctionality();
+            
+            // Sort table by VST ID on page load with longer delay to ensure content is loaded
+            console.log('Admin page loaded, scheduling VST ID sorting...');
+            setTimeout(function() {
+                sortTableByVSTId();
+            }, 1000);
+            
+            // Global error handler for unhandled promise rejections
+            window.addEventListener('unhandledrejection', function(event) {
+                console.error('Unhandled promise rejection:', event.reason);
+                event.preventDefault(); // Prevent error from showing in console
+                
+                // Show user-friendly error message
+                showNotification('Terjadi kesalahan sistem. Silakan refresh halaman dan coba lagi.', 'error');
+            });
+            
+            // Global error handler for JavaScript errors
+            window.addEventListener('error', function(event) {
+                console.error('JavaScript error:', event.error);
+                
+                // Only show notification for critical errors
+                if (event.error && event.error.message && 
+                    (event.error.message.includes('JSON') || 
+                     event.error.message.includes('fetch') ||
+                     event.error.message.includes('network'))) {
+                    showNotification('Terjadi kesalahan koneksi. Silakan periksa koneksi internet dan coba lagi.', 'error');
+                }
+            });
+            
+            // Check if page was loaded after a form submission or navigation
+            if (performance.navigation.type === 1) {
+                // Page was refreshed, check for any error parameters in URL
+                var urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('error')) {
+                    showNotification('Terjadi kesalahan: ' + urlParams.get('error'), 'error');
+                }
+            }
         });
     </script>
 

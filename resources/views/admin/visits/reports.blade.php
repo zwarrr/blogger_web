@@ -21,6 +21,66 @@
         .table-enhanced tbody tr:hover {
             background: linear-gradient(90deg, rgba(239, 246, 255, 0.5), rgba(219, 234, 254, 0.3));
         }
+        
+        /* PDF Export Loading Overlay */
+        .pdf-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .pdf-loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .pdf-loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pdf-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #ea580c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Print-friendly styles for PDF generation */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            body {
+                background: white !important;
+            }
+            
+            .bg-gradient-to-br {
+                background: white !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans antialiased">
@@ -284,7 +344,7 @@
                                     @endif
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 truncate">#{{ $visit->id ?? 'N/A' }}</p>
+                                    <p class="text-sm font-medium text-gray-900 truncate">{{ $visit->visit_id ?: 'VST' . str_pad($visit->id ?? 0, 4, '0', STR_PAD_LEFT) }}</p>
                                     <p class="text-xs text-gray-600 mt-1">
                                         <span class="font-medium">{{ $visit->author_display_name ?? ($visit->author ? $visit->author->name : 'Author tidak tersedia') }}</span>
                                         @if($visit->auditor_display_name ?? ($visit->auditor ? $visit->auditor->name : null))
@@ -320,6 +380,15 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- PDF Loading Overlay -->
+    <div class="pdf-loading-overlay" id="pdfLoadingOverlay">
+        <div class="pdf-loading-content">
+            <div class="pdf-loading-spinner"></div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Menggenerate Laporan PDF</h3>
+            <p class="text-sm text-gray-600">Mohon tunggu, sedang memproses data laporan...</p>
+        </div>
     </div>
 
     <!-- Scripts -->
@@ -486,177 +555,511 @@
             }
         });
 
-        // PDF Export Function
+        // PDF Export Function - Enhanced Professional Styling
         async function exportToPDF() {
             const { jsPDF } = window.jspdf;
             
-            // Show loading
-            document.body.style.cursor = 'wait';
+            // Show enhanced loading overlay
+            const loadingOverlay = document.getElementById('pdfLoadingOverlay');
+            loadingOverlay.classList.add('active');
+            
+            // Update button state
             const exportBtn = document.querySelector('button[onclick="exportToPDF()"]');
             const originalText = exportBtn.innerHTML;
-            exportBtn.innerHTML = '<i data-feather="loader" class="w-4 h-4 mr-2 animate-spin"></i>Menggenerate PDF...';
+            exportBtn.innerHTML = '<i data-feather="loader" class="w-4 h-4 mr-2 animate-spin"></i>Processing...';
             exportBtn.disabled = true;
             
             try {
-                // Get current date range from form inputs
-                const startDate = document.getElementById('start_date')?.value || '{{ $startDate }}';
-                const endDate = document.getElementById('end_date')?.value || '{{ $endDate }}';
+                // Get current date range from inputs
+                const startDateInput = document.querySelector('input[name="start_date"]');
+                const endDateInput = document.querySelector('input[name="end_date"]');
+                const startDate = startDateInput?.value || '{{ $startDate }}';
+                const endDate = endDateInput?.value || '{{ $endDate }}';
                 
-                // Fetch fresh data from server
-                const url = new URL('{{ route('admin.visits.export-pdf') }}');
-                if (startDate) url.searchParams.append('start_date', startDate);
-                if (endDate) url.searchParams.append('end_date', endDate);
+                // Get data from current page
+                const totalVisits = {{ $totalVisits ?? 0 }};
+                const pendingVisits = {{ $pendingVisits ?? 0 }};
+                const completedVisits = {{ $completedVisits ?? 0 }};
+                const visitsByAuthor = @json($visitsByAuthor ?? []);
+                const visitsByAuditor = @json($visitsByAuditor ?? []);
+                const recentVisits = @json($recentVisits ?? []);
                 
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error('Gagal mengambil data laporan dari server');
-                }
-                
-                const data = await response.json();
-                
-                // Initialize PDF
+                // Initialize PDF with professional settings
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
-                let yPosition = 20;
+                const margin = 20;
+                const contentWidth = pageWidth - (margin * 2);
+                let yPosition = margin;
                 
-                // Helper function to check if new page is needed
-                function checkAddPage(requiredSpace = 20) {
-                    if (yPosition > pageHeight - requiredSpace) {
+                // Color scheme
+                const colors = {
+                    primary: [51, 65, 85],      // slate-700
+                    secondary: [100, 116, 139], // slate-500
+                    accent: [234, 88, 12],      // orange-600
+                    light: [248, 250, 252],     // slate-50
+                    success: [34, 197, 94],     // green-500
+                    warning: [245, 158, 11],    // amber-500
+                    danger: [239, 68, 68]       // red-500
+                };
+                
+                // Helper functions
+                function addNewPageIfNeeded(requiredSpace = 25) {
+                    if (yPosition > pageHeight - margin - requiredSpace) {
                         pdf.addPage();
-                        yPosition = 20;
+                        yPosition = margin;
                         return true;
                     }
                     return false;
                 }
                 
-                // Header
-                pdf.setFontSize(18);
-                pdf.setFont(undefined, 'bold');
-                pdf.text('Laporan Kunjungan Auditor', pageWidth / 2, yPosition, { align: 'center' });
-                yPosition += 10;
+                function drawLine(x1, y1, x2, y2, color = colors.secondary, width = 0.5) {
+                    pdf.setDrawColor(...color);
+                    pdf.setLineWidth(width);
+                    pdf.line(x1, y1, x2, y2);
+                }
                 
-                // Date range
-                pdf.setFontSize(12);
-                pdf.setFont(undefined, 'normal');
-                pdf.text(`Periode: ${formatDate(data.startDate)} - ${formatDate(data.endDate)}`, pageWidth / 2, yPosition, { align: 'center' });
-                yPosition += 15;
+                function drawRect(x, y, width, height, fillColor = null, strokeColor = null) {
+                    if (fillColor) {
+                        pdf.setFillColor(...fillColor);
+                        pdf.rect(x, y, width, height, 'F');
+                    }
+                    if (strokeColor) {
+                        pdf.setDrawColor(...strokeColor);
+                        pdf.setLineWidth(0.5);
+                        pdf.rect(x, y, width, height, 'S');
+                    }
+                }
                 
-                // Statistics Summary
-                pdf.setFontSize(14);
-                pdf.setFont(undefined, 'bold');
-                pdf.text('Ringkasan Statistik', 20, yPosition);
-                yPosition += 10;
+                function addText(text, x, y, options = {}) {
+                    const {
+                        fontSize = 12,
+                        fontStyle = 'normal',
+                        color = colors.primary,
+                        align = 'left',
+                        maxWidth = null
+                    } = options;
+                    
+                    pdf.setFontSize(fontSize);
+                    pdf.setFont('helvetica', fontStyle);
+                    pdf.setTextColor(...color);
+                    
+                    if (maxWidth) {
+                        const lines = pdf.splitTextToSize(text, maxWidth);
+                        pdf.text(lines, x, y, { align });
+                        return lines.length * (fontSize * 0.352778); // Convert pt to mm
+                    } else {
+                        pdf.text(text, x, y, { align });
+                        return fontSize * 0.352778;
+                    }
+                }
                 
-                pdf.setFontSize(11);
-                pdf.setFont(undefined, 'normal');
+                // HEADER SECTION WITH LOGO AREA
+                drawRect(margin, yPosition, contentWidth, 25, colors.light);
+                drawRect(margin, yPosition, contentWidth, 25, null, colors.secondary);
                 
-                const stats = [
-                    ['Total Kunjungan', data.totalVisits.toLocaleString()],
-                    ['Belum Dikunjungi', `${data.pendingVisits.toLocaleString()} (${data.totalVisits > 0 ? Math.round((data.pendingVisits / data.totalVisits) * 100) : 0}%)`],
-                    ['Kunjungan Selesai', `${data.completedVisits.toLocaleString()} (${data.totalVisits > 0 ? Math.round((data.completedVisits / data.totalVisits) * 100) : 0}%)`],
-                    ['Tingkat Keberhasilan', `${data.successRate}%`]
-                ];
-                
-                stats.forEach(([label, value]) => {
-                    pdf.text(`• ${label}: ${value}`, 25, yPosition);
-                    yPosition += 7;
+                // Company/Institution Header
+                addText('SISTEM MANAJEMEN KUNJUNGAN AUDITOR', pageWidth / 2, yPosition + 8, {
+                    fontSize: 16,
+                    fontStyle: 'bold',
+                    color: colors.primary,
+                    align: 'center'
                 });
                 
+                addText('Laporan Komprehensif Aktivitas Audit', pageWidth / 2, yPosition + 15, {
+                    fontSize: 12,
+                    color: colors.secondary,
+                    align: 'center'
+                });
+                
+                addText(`Periode: ${formatDate(startDate)} - ${formatDate(endDate)}`, pageWidth / 2, yPosition + 21, {
+                    fontSize: 10,
+                    color: colors.secondary,
+                    align: 'center'
+                });
+                
+                yPosition += 35;
+                
+                // EXECUTIVE SUMMARY SECTION
+                addNewPageIfNeeded(60);
+                addText('RINGKASAN EKSEKUTIF', margin, yPosition, {
+                    fontSize: 14,
+                    fontStyle: 'bold',
+                    color: colors.primary
+                });
+                
+                yPosition += 8;
+                drawLine(margin, yPosition, pageWidth - margin, yPosition, colors.accent, 2);
                 yPosition += 10;
                 
-                // Top Authors
-                if (data.visitsByAuthor && data.visitsByAuthor.length > 0) {
-                    checkAddPage(50);
-                    pdf.setFontSize(14);
-                    pdf.setFont(undefined, 'bold');
-                    pdf.text('Top 5 Author Terbanyak', 20, yPosition);
-                    yPosition += 10;
+                // Statistics cards
+                const statsData = [
+                    {
+                        label: 'Total Kunjungan',
+                        value: totalVisits.toLocaleString('id-ID'),
+                        subtitle: 'Keseluruhan aktivitas audit',
+                        color: colors.primary
+                    },
+                    {
+                        label: 'Belum Dikunjungi',
+                        value: `${pendingVisits.toLocaleString('id-ID')} (${totalVisits > 0 ? Math.round((pendingVisits / totalVisits) * 100) : 0}%)`,
+                        subtitle: 'Menunggu tindak lanjut',
+                        color: colors.warning
+                    },
+                    {
+                        label: 'Kunjungan Selesai',
+                        value: `${completedVisits.toLocaleString('id-ID')} (${totalVisits > 0 ? Math.round((completedVisits / totalVisits) * 100) : 0}%)`,
+                        subtitle: 'Telah diselesaikan',
+                        color: colors.success
+                    },
+                    {
+                        label: 'Tingkat Keberhasilan',
+                        value: `${totalVisits > 0 ? Math.round((completedVisits / totalVisits) * 100) : 0}%`,
+                        subtitle: 'Efektivitas audit',
+                        color: colors.accent
+                    }
+                ];
+                
+                // Draw statistics in 2x2 grid
+                const cardWidth = (contentWidth - 10) / 2;
+                const cardHeight = 25;
+                
+                for (let i = 0; i < statsData.length; i++) {
+                    const col = i % 2;
+                    const row = Math.floor(i / 2);
+                    const x = margin + (col * (cardWidth + 10));
+                    const y = yPosition + (row * (cardHeight + 5));
                     
-                    pdf.setFontSize(11);
-                    pdf.setFont(undefined, 'normal');
+                    // Card background
+                    drawRect(x, y, cardWidth, cardHeight, [255, 255, 255]);
+                    drawRect(x, y, cardWidth, cardHeight, null, colors.secondary);
                     
-                    data.visitsByAuthor.forEach((author, index) => {
-                        const name = author.author?.name || author.author_name || 'Author tidak tersedia';
-                        pdf.text(`${index + 1}. ${name}: ${author.total} kunjungan`, 25, yPosition);
-                        yPosition += 7;
+                    // Colored accent bar
+                    drawRect(x, y, 3, cardHeight, statsData[i].color);
+                    
+                    // Content
+                    addText(statsData[i].label, x + 8, y + 8, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.secondary
                     });
-                    yPosition += 10;
+                    
+                    addText(statsData[i].value, x + 8, y + 15, {
+                        fontSize: 14,
+                        fontStyle: 'bold',
+                        color: statsData[i].color
+                    });
+                    
+                    addText(statsData[i].subtitle, x + 8, y + 21, {
+                        fontSize: 8,
+                        color: colors.secondary
+                    });
                 }
                 
-                // Top Auditors
-                if (data.visitsByAuditor && data.visitsByAuditor.length > 0) {
-                    checkAddPage(50);
-                    pdf.setFontSize(14);
-                    pdf.setFont(undefined, 'bold');
-                    pdf.text('Top 5 Auditor Teraktif', 20, yPosition);
-                    yPosition += 10;
-                    
-                    pdf.setFontSize(11);
-                    pdf.setFont(undefined, 'normal');
-                    
-                    data.visitsByAuditor.forEach((auditor, index) => {
-                        const name = auditor.auditor?.name || auditor.auditor_name || 'Auditor tidak tersedia';
-                        pdf.text(`${index + 1}. ${name}: ${auditor.total} kunjungan`, 25, yPosition);
-                        yPosition += 7;
-                    });
-                    yPosition += 10;
-                }
+                yPosition += 60;
                 
-                // Recent Activities
-                if (data.recentVisits && data.recentVisits.length > 0) {
-                    checkAddPage(80);
+                // PERFORMANCE ANALYSIS SECTION
+                if (visitsByAuthor && visitsByAuthor.length > 0) {
+                    addNewPageIfNeeded(80);
                     
-                    pdf.setFontSize(14);
-                    pdf.setFont(undefined, 'bold');
-                    pdf.text('Aktivitas Terbaru', 20, yPosition);
-                    yPosition += 10;
+                    addText('ANALISIS KINERJA AUTHOR', margin, yPosition, {
+                        fontSize: 14,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
                     
-                    pdf.setFontSize(10);
-                    pdf.setFont(undefined, 'normal');
+                    yPosition += 8;
+                    drawLine(margin, yPosition, pageWidth - margin, yPosition, colors.accent, 2);
+                    yPosition += 15;
                     
-                    data.recentVisits.slice(0, 10).forEach((visit, index) => {
-                        checkAddPage(25);
+                    // Table header
+                    drawRect(margin, yPosition, contentWidth, 8, colors.light);
+                    drawRect(margin, yPosition, contentWidth, 8, null, colors.secondary);
+                    
+                    addText('Ranking', margin + 5, yPosition + 5, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
+                    
+                    addText('Nama Author', margin + 25, yPosition + 5, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
+                    
+                    addText('Jumlah Kunjungan', pageWidth - margin - 35, yPosition + 5, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
+                    
+                    addText('Persentase', pageWidth - margin - 5, yPosition + 5, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.primary,
+                        align: 'right'
+                    });
+                    
+                    yPosition += 8;
+                    
+                    // Table rows
+                    visitsByAuthor.slice(0, 10).forEach((author, index) => {
+                        const rowHeight = 8;
+                        const isEven = index % 2 === 0;
                         
-                        const authorName = visit.author?.name || 'Author tidak tersedia';
-                        const auditorName = visit.auditor?.name || '';
-                        const status = formatStatus(visit.status);
-                        const visitDate = new Date(visit.visit_date).toLocaleDateString('id-ID');
+                        if (isEven) {
+                            drawRect(margin, yPosition, contentWidth, rowHeight, [249, 250, 251]);
+                        }
                         
-                        pdf.text(`#${visit.id} - ${authorName}${auditorName ? ' ← ' + auditorName : ''}`, 25, yPosition);
-                        yPosition += 5;
-                        pdf.text(`Status: ${status} | Tanggal: ${visitDate}`, 30, yPosition);
-                        yPosition += 8;
+                        const authorName = (author.author && author.author.name) || author.author_name || 'Author tidak tersedia';
+                        const percentage = totalVisits > 0 ? ((author.total / totalVisits) * 100).toFixed(1) : '0.0';
+                        
+                        addText((index + 1).toString(), margin + 5, yPosition + 5, {
+                            fontSize: 9,
+                            color: colors.secondary
+                        });
+                        
+                        addText(authorName, margin + 25, yPosition + 5, {
+                            fontSize: 9,
+                            color: colors.primary,
+                            maxWidth: 80
+                        });
+                        
+                        addText(author.total.toLocaleString('id-ID'), pageWidth - margin - 35, yPosition + 5, {
+                            fontSize: 9,
+                            fontStyle: 'bold',
+                            color: colors.accent
+                        });
+                        
+                        addText(`${percentage}%`, pageWidth - margin - 5, yPosition + 5, {
+                            fontSize: 9,
+                            color: colors.secondary,
+                            align: 'right'
+                        });
+                        
+                        yPosition += rowHeight;
+                    });
+                    
+                    yPosition += 10;
+                }
+                
+                // AUDITOR PERFORMANCE SECTION
+                if (visitsByAuditor && visitsByAuditor.length > 0) {
+                    addNewPageIfNeeded(80);
+                    
+                    addText('ANALISIS KINERJA AUDITOR', margin, yPosition, {
+                        fontSize: 14,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
+                    
+                    yPosition += 8;
+                    drawLine(margin, yPosition, pageWidth - margin, yPosition, colors.accent, 2);
+                    yPosition += 15;
+                    
+                    // Table header
+                    drawRect(margin, yPosition, contentWidth, 8, colors.light);
+                    drawRect(margin, yPosition, contentWidth, 8, null, colors.secondary);
+                    
+                    addText('Ranking', margin + 5, yPosition + 5, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
+                    
+                    addText('Nama Auditor', margin + 25, yPosition + 5, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
+                    
+                    addText('Jumlah Audit', pageWidth - margin - 35, yPosition + 5, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
+                    
+                    addText('Produktivitas', pageWidth - margin - 5, yPosition + 5, {
+                        fontSize: 10,
+                        fontStyle: 'bold',
+                        color: colors.primary,
+                        align: 'right'
+                    });
+                    
+                    yPosition += 8;
+                    
+                    // Table rows
+                    visitsByAuditor.slice(0, 10).forEach((auditor, index) => {
+                        const rowHeight = 8;
+                        const isEven = index % 2 === 0;
+                        
+                        if (isEven) {
+                            drawRect(margin, yPosition, contentWidth, rowHeight, [249, 250, 251]);
+                        }
+                        
+                        const auditorName = (auditor.auditor && auditor.auditor.name) || auditor.auditor_name || 'Auditor tidak tersedia';
+                        const productivity = auditor.total > 10 ? 'Tinggi' : auditor.total > 5 ? 'Sedang' : 'Rendah';
+                        const productivityColor = auditor.total > 10 ? colors.success : auditor.total > 5 ? colors.warning : colors.danger;
+                        
+                        addText((index + 1).toString(), margin + 5, yPosition + 5, {
+                            fontSize: 9,
+                            color: colors.secondary
+                        });
+                        
+                        addText(auditorName, margin + 25, yPosition + 5, {
+                            fontSize: 9,
+                            color: colors.primary,
+                            maxWidth: 80
+                        });
+                        
+                        addText(auditor.total.toLocaleString('id-ID'), pageWidth - margin - 35, yPosition + 5, {
+                            fontSize: 9,
+                            fontStyle: 'bold',
+                            color: colors.accent
+                        });
+                        
+                        addText(productivity, pageWidth - margin - 5, yPosition + 5, {
+                            fontSize: 9,
+                            fontStyle: 'bold',
+                            color: productivityColor,
+                            align: 'right'
+                        });
+                        
+                        yPosition += rowHeight;
+                    });
+                    
+                    yPosition += 15;
+                }
+                
+                // RECENT ACTIVITIES SECTION
+                if (recentVisits && recentVisits.length > 0) {
+                    addNewPageIfNeeded(80);
+                    
+                    addText('AKTIVITAS TERBARU', margin, yPosition, {
+                        fontSize: 14,
+                        fontStyle: 'bold',
+                        color: colors.primary
+                    });
+                    
+                    yPosition += 8;
+                    drawLine(margin, yPosition, pageWidth - margin, yPosition, colors.accent, 2);
+                    yPosition += 15;
+                    
+                    recentVisits.slice(0, 15).forEach((visit, index) => {
+                        addNewPageIfNeeded(20);
+                        
+                        const visitId = visit.visit_id || `VST${String(visit.id || 0).padStart(4, '0')}`;
+                        const authorName = (visit.author && visit.author.name) || visit.author_name || 'Author tidak tersedia';
+                        const auditorName = (visit.auditor && visit.auditor.name) || visit.auditor_name || 'Belum ditentukan';
+                        const status = formatStatus(visit.status || 'unknown');
+                        const visitDate = visit.visit_date ? new Date(visit.visit_date).toLocaleDateString('id-ID') : 'Tanggal tidak tersedia';
+                        
+                        // Visit card
+                        drawRect(margin, yPosition, contentWidth, 15, [255, 255, 255]);
+                        drawRect(margin, yPosition, contentWidth, 15, null, [229, 231, 235]);
+                        
+                        // Status indicator
+                        const statusColor = getStatusColor(visit.status);
+                        drawRect(margin, yPosition, 3, 15, statusColor);
+                        
+                        // Visit ID and Date
+                        addText(`${visitId} - ${visitDate}`, margin + 8, yPosition + 6, {
+                            fontSize: 10,
+                            fontStyle: 'bold',
+                            color: colors.primary
+                        });
+                        
+                        // Author and Auditor info
+                        addText(`Author: ${authorName} | Auditor: ${auditorName}`, margin + 8, yPosition + 11, {
+                            fontSize: 9,
+                            color: colors.secondary
+                        });
+                        
+                        // Status
+                        addText(status, pageWidth - margin - 5, yPosition + 9, {
+                            fontSize: 9,
+                            fontStyle: 'bold',
+                            color: statusColor,
+                            align: 'right'
+                        });
+                        
+                        yPosition += 18;
                     });
                 }
                 
-                // Footer on all pages
+                // FOOTER AND METADATA
+                const currentDate = new Date().toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Add footer to all pages
                 const totalPages = pdf.internal.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
                     pdf.setPage(i);
-                    pdf.setFontSize(8);
-                    pdf.setFont(undefined, 'normal');
-                    pdf.text(`Dibuat pada ${data.generatedAt} | Halaman ${i} dari ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                    
+                    // Footer line
+                    drawLine(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20, colors.secondary, 0.5);
+                    
+                    // Footer text
+                    addText(`Laporan dibuat pada: ${currentDate}`, margin, pageHeight - 12, {
+                        fontSize: 8,
+                        color: colors.secondary
+                    });
+                    
+                    addText(`Halaman ${i} dari ${totalPages}`, pageWidth - margin, pageHeight - 12, {
+                        fontSize: 8,
+                        color: colors.secondary,
+                        align: 'right'
+                    });
+                    
+                    addText('Sistem Manajemen Kunjungan Auditor - Confidential', pageWidth / 2, pageHeight - 8, {
+                        fontSize: 7,
+                        color: colors.secondary,
+                        align: 'center'
+                    });
                 }
                 
-                // Save the PDF
-                const filename = `Laporan_Kunjungan_${data.startDate}_to_${data.endDate}.pdf`;
+                // Save the PDF with professional naming
+                const filename = `Laporan_Audit_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.pdf`;
                 pdf.save(filename);
                 
             } catch (error) {
                 console.error('Error generating PDF:', error);
-                alert('Terjadi kesalahan saat menggenerate PDF: ' + error.message);
+                alert('Terjadi kesalahan saat menggenerate PDF. Silakan coba lagi.');
             } finally {
+                // Hide loading overlay
+                const loadingOverlay = document.getElementById('pdfLoadingOverlay');
+                loadingOverlay.classList.remove('active');
+                
                 // Reset button
-                document.body.style.cursor = 'default';
                 exportBtn.innerHTML = originalText;
                 exportBtn.disabled = false;
-                feather.replace(); // Re-initialize icons
+                feather.replace();
             }
         }
         
-        // Helper functions
+        // Helper function for status colors
+        function getStatusColor(status) {
+            const statusColors = {
+                'belum_dikunjungi': [245, 158, 11],   // amber-500
+                'dikonfirmasi': [59, 130, 246],       // blue-500
+                'dalam_perjalanan': [139, 92, 246],   // violet-500
+                'sedang_dikunjungi': [168, 85, 247],  // purple-500
+                'selesai': [34, 197, 94],             // green-500
+                'menunggu_acc': [249, 115, 22]        // orange-500
+            };
+            return statusColors[status] || [107, 114, 128]; // gray-500
+        }
+        
+        // Enhanced Helper functions for professional PDF formatting
         function formatDate(dateString) {
+            if (!dateString) return 'Tidak diketahui';
             const date = new Date(dateString);
             return date.toLocaleDateString('id-ID', { 
                 day: '2-digit', 
@@ -666,6 +1069,7 @@
         }
         
         function formatDateTime(dateString) {
+            if (!dateString) return 'Tidak diketahui';
             const date = new Date(dateString);
             return date.toLocaleDateString('id-ID', { 
                 day: '2-digit', 
@@ -685,7 +1089,22 @@
                 'selesai': 'Selesai',
                 'menunggu_acc': 'Menunggu ACC'
             };
-            return statusMap[status] || status;
+            return statusMap[status] || 'Status Tidak Diketahui';
+        }
+        
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(amount || 0);
+        }
+        
+        function capitalizeWords(str) {
+            if (!str) return '';
+            return str.split(' ')
+                     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                     .join(' ');
         }
     </script>
 </body>

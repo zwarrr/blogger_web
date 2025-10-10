@@ -138,7 +138,7 @@
                     <h1 class="text-2xl font-bold text-gray-900">
                         Edit Kunjungan
                         <span class="ml-3 px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full font-medium">
-                            #{{ $visit->id }}
+                            {{ $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}
                         </span>
                     </h1>
                     <p class="mt-1 text-sm text-gray-600">Perbarui informasi kunjungan yang sudah ada</p>
@@ -199,7 +199,7 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
                                         ID Kunjungan
                                     </label>
-                                    <input type="text" value="{{ $visit->id }}" readonly
+                                    <input type="text" value="{{ $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}" readonly
                                            class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-600 font-medium">
                                 </div>
 
@@ -276,7 +276,7 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
                                         Tanggal & Waktu Kunjungan <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="datetime-local" name="visit_date" value="{{ old('visit_date', $visit->visit_date->format('Y-m-d\TH:i')) }}" required
+                                    <input type="datetime-local" name="visit_date" value="{{ old('visit_date', $visit->visit_date ? $visit->visit_date->format('Y-m-d\TH:i') : '') }}" required
                                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 input-field">
                                 </div>
 
@@ -385,7 +385,7 @@
                         </div>
 
                         <!-- Report Information Section (if exists) -->
-                        @if($visit->report)
+                        @if($visit->report_notes || $visit->auditor_notes || $visit->started_at || $visit->completed_at || $visit->selfie_photo || $visit->photos)
                         <div class="mt-8 pt-8 border-t border-gray-200">
                             <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
                                 <svg class="w-5 h-5 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -400,38 +400,38 @@
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <!-- Report Details -->
                                 <div class="space-y-4">
-                                    @if($visit->report->report_notes)
+                                    @if($visit->report_notes)
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Laporan</label>
                                         <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                            <div class="text-sm text-gray-900">{{ $visit->report->report_notes }}</div>
+                                            <div class="text-sm text-gray-900">{{ $visit->report_notes }}</div>
                                         </div>
                                     </div>
                                     @endif
 
-                                    @if($visit->report->auditor_notes)
+                                    @if($visit->auditor_notes)
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Auditor</label>
                                         <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                            <div class="text-sm text-gray-900">{{ $visit->report->auditor_notes }}</div>
+                                            <div class="text-sm text-gray-900">{{ $visit->auditor_notes }}</div>
                                         </div>
                                     </div>
                                     @endif
 
-                                    @if($visit->report->visit_start_time || $visit->report->visit_end_time)
+                                    @if($visit->started_at || $visit->completed_at)
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Waktu Kunjungan</label>
                                         <div class="space-y-2">
-                                            @if($visit->report->visit_start_time)
+                                            @if($visit->started_at)
                                             <div class="flex items-center text-sm">
                                                 <span class="font-medium text-gray-600 w-16">Mulai:</span>
-                                                <span class="text-gray-900">{{ \Carbon\Carbon::parse($visit->report->visit_start_time)->format('d M Y, H:i') }} WIB</span>
+                                                <span class="text-gray-900">{{ \Carbon\Carbon::parse($visit->started_at)->format('d M Y, H:i') }} WIB</span>
                                             </div>
                                             @endif
-                                            @if($visit->report->visit_end_time)
+                                            @if($visit->completed_at)
                                             <div class="flex items-center text-sm">
                                                 <span class="font-medium text-gray-600 w-16">Selesai:</span>
-                                                <span class="text-gray-900">{{ \Carbon\Carbon::parse($visit->report->visit_end_time)->format('d M Y, H:i') }} WIB</span>
+                                                <span class="text-gray-900">{{ \Carbon\Carbon::parse($visit->completed_at)->format('d M Y, H:i') }} WIB</span>
                                             </div>
                                             @endif
                                         </div>
@@ -440,7 +440,7 @@
                                 </div>
 
                                 <!-- Selfie Photo and Location -->
-                                @if($visit->report->selfie_photo || ($visit->report->selfie_latitude && $visit->report->selfie_longitude))
+                                @if($visit->selfie_photo || ($visit->selfie_latitude && $visit->selfie_longitude))
                                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                     <h4 class="font-medium text-gray-800 mb-3 flex items-center">
                                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -449,12 +449,12 @@
                                         Foto Selfie & Lokasi
                                     </h4>
                                     
-                                    @if($visit->report->selfie_photo && $visit->report->selfie_latitude && $visit->report->selfie_longitude)
+                                    @if($visit->selfie_photo && $visit->selfie_latitude && $visit->selfie_longitude)
                                         <div class="grid grid-cols-2 gap-4">
                                             <!-- Selfie Photo -->
                                             <div>
                                                 <p class="text-sm font-medium text-gray-700 mb-2">Foto Selfie</p>
-                                                <img src="{{ $visit->report->selfie_photo }}" alt="Foto Selfie" 
+                                                <img src="{{ $visit->selfie_photo }}" alt="Foto Selfie" 
                                                      class="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-all shadow-sm" 
                                                      onclick="window.open(this.src)" title="Klik untuk memperbesar">
                                             </div>
@@ -467,25 +467,25 @@
                                         </div>
                                         
                                         <div class="mt-3 p-2 bg-gray-100 rounded text-sm text-gray-600">
-                                            <strong>Koordinat:</strong> {{ number_format($visit->report->selfie_latitude, 6) }}, {{ number_format($visit->report->selfie_longitude, 6) }}
+                                            <strong>Koordinat:</strong> {{ number_format($visit->selfie_latitude, 6) }}, {{ number_format($visit->selfie_longitude, 6) }}
                                         </div>
                                     @else
                                         <!-- Only photo or only coordinates -->
-                                        @if($visit->report->selfie_photo)
+                                        @if($visit->selfie_photo)
                                         <div class="mb-3">
                                             <p class="text-sm font-medium text-gray-700 mb-2">Foto Selfie</p>
-                                            <img src="{{ $visit->report->selfie_photo }}" alt="Foto Selfie" 
+                                            <img src="{{ $visit->selfie_photo }}" alt="Foto Selfie" 
                                                  class="w-40 h-40 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-all shadow-sm" 
                                                  onclick="window.open(this.src)" title="Klik untuk memperbesar">
                                         </div>
                                         @endif
                                         
-                                        @if($visit->report->selfie_latitude && $visit->report->selfie_longitude)
+                                        @if($visit->selfie_latitude && $visit->selfie_longitude)
                                         <div class="mb-3">
                                             <p class="text-sm font-medium text-gray-700 mb-2">Lokasi Selfie</p>
                                             <div id="selfieMap-{{ $visit->id }}" class="w-full h-32 rounded-lg border border-gray-300 shadow-sm"></div>
                                             <div class="mt-2 text-sm text-gray-600">
-                                                <strong>Koordinat:</strong> {{ number_format($visit->report->selfie_latitude, 6) }}, {{ number_format($visit->report->selfie_longitude, 6) }}
+                                                <strong>Koordinat:</strong> {{ number_format($visit->selfie_latitude, 6) }}, {{ number_format($visit->selfie_longitude, 6) }}
                                             </div>
                                         </div>
                                         @endif
@@ -495,16 +495,16 @@
                             </div>
 
                             <!-- Documentation Photos -->
-                            @if($visit->report->photos && count($visit->report->photos) > 0)
+                            @if($visit->photos && count($visit->photos) > 0)
                             <div class="mt-6 bg-green-50 p-4 rounded-lg border border-green-200">
                                 <h4 class="font-medium text-green-800 mb-3 flex items-center">
                                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
                                     </svg>
-                                    Foto Dokumentasi ({{ count($visit->report->photos) }} foto)
+                                    Foto Dokumentasi ({{ count($visit->photos) }} foto)
                                 </h4>
                                 <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                    @foreach($visit->report->photos as $index => $photo)
+                                    @foreach($visit->photos as $index => $photo)
                                     <div class="relative">
                                         <img src="{{ $photo }}" alt="Dokumentasi {{ $index + 1 }}" 
                                              class="w-full h-20 object-cover rounded-lg border-2 border-green-300 cursor-pointer hover:opacity-90 transition-all shadow-md" 
@@ -668,13 +668,13 @@
     }
 
     // Initialize selfie map if it exists
-    @if($visit->report && ($visit->report->selfie_latitude && $visit->report->selfie_longitude))
+    @if($visit->selfie_latitude && $visit->selfie_longitude)
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             const selfieMapElement = document.getElementById('selfieMap-{{ $visit->id }}');
             if (selfieMapElement) {
                 const selfieMap = L.map('selfieMap-{{ $visit->id }}', {
-                    center: [{{ $visit->report->selfie_latitude }}, {{ $visit->report->selfie_longitude }}],
+                    center: [{{ $visit->selfie_latitude }}, {{ $visit->selfie_longitude }}],
                     zoom: 16,
                     zoomControl: true,
                     scrollWheelZoom: true,
@@ -687,9 +687,9 @@
                     attribution: '© OpenStreetMap contributors'
                 }).addTo(selfieMap);
                 
-                L.marker([{{ $visit->report->selfie_latitude }}, {{ $visit->report->selfie_longitude }}])
+                L.marker([{{ $visit->selfie_latitude }}, {{ $visit->selfie_longitude }}])
                     .addTo(selfieMap)
-                    .bindPopup('<div style="color: #374151; font-weight: 500; font-size: 13px;">Lokasi Selfie</div><div style="margin-top: 4px; font-size: 11px; color: #6b7280;"><b>Lat:</b> {{ number_format($visit->report->selfie_latitude, 6) }}<br><b>Lng:</b> {{ number_format($visit->report->selfie_longitude, 6) }}</div>')
+                    .bindPopup('<div style="color: #374151; font-weight: 500; font-size: 13px;">Lokasi Selfie</div><div style="margin-top: 4px; font-size: 11px; color: #6b7280;"><b>Lat:</b> {{ number_format($visit->selfie_latitude, 6) }}<br><b>Lng:</b> {{ number_format($visit->selfie_longitude, 6) }}</div>')
                     .openPopup();
                 
                 // Invalidate size to fix display issues

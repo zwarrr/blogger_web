@@ -24,7 +24,7 @@ class AuditorVisitController extends Controller
         }
         
         $query = Visit::query()
-                      ->with(['admin', 'author', 'auditor'])
+                      ->with(['admin', 'author:id,name,email,phone', 'auditor:id,name,email'])
                       ->where('auditor_id', $auditor->id);
 
         // Apply filters
@@ -82,8 +82,12 @@ class AuditorVisitController extends Controller
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
-        // Load relationships
-        $visit->load(['admin', 'author', 'auditor']);
+        // Load relationships with specific fields
+        $visit->load([
+            'admin:id,name,email', 
+            'author:id,name,email,phone', 
+            'auditor:id,name,email'
+        ]);
 
         return view('auditor.visits.show', compact('visit'));
     }
@@ -100,8 +104,12 @@ class AuditorVisitController extends Controller
             abort(403, 'Anda tidak memiliki akses ke kunjungan ini.');
         }
 
-        // Load relationships if not already loaded
-        $visit->load(['author', 'auditor']);
+        // Load relationships with specific fields if not already loaded
+        $visit->load([
+            'author:id,name,email,phone,address', 
+            'auditor:id,name,email,phone',
+            'report'
+        ]);
         
         $data = [
             'id' => $visit->id,
@@ -177,6 +185,22 @@ class AuditorVisitController extends Controller
             'visit_end_time' => $visit->completed_at,
             'created_at' => $visit->updated_at
         ];
+
+        // Add reschedule information if available
+        if ($visit->reschedule_count > 0) {
+            $data['reschedule_count'] = $visit->reschedule_count;
+            $data['reschedule_reason'] = $visit->reschedule_reason;
+            $data['rescheduled_at'] = $visit->rescheduled_at;
+            
+            // Get rescheduled_by user name if available
+            if ($visit->rescheduled_by) {
+                // Try to get user name from users table
+                $rescheduledBy = \App\Models\User::find($visit->rescheduled_by);
+                $data['rescheduled_by_name'] = $rescheduledBy ? $rescheduledBy->name : 'User ID: ' . $visit->rescheduled_by;
+            } else {
+                $data['rescheduled_by_name'] = $visit->author?->name ?? $visit->author_name ?? 'Author';
+            }
+        }
 
         return response()->json($data);
     }

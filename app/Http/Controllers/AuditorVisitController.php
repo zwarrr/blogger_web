@@ -266,4 +266,75 @@ class AuditorVisitController extends Controller
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Get visit details for AJAX modal
+     */
+    public function detail(Visit $visit)
+    {
+        $auditor = auth('auditor')->user() ?? auth()->user();
+        
+        // Ensure this visit is assigned to current auditor
+        if ($visit->auditor_id !== $auditor->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+        
+        // Load relationships with proper data
+        $visit->load(['author:id,name,email,phone', 'auditor:id,name,email', 'creator:id,name', 'visitReport']);
+        
+        // Additional author data retrieval if relationship is incomplete
+        if (!$visit->author || empty($visit->author->email)) {
+            if (!empty($visit->author_id)) {
+                $authorData = null;
+                
+                // Try with exact author_id first
+                $authorData = \App\Models\User::where('id', $visit->author_id)
+                                             ->where('role', 'author')
+                                             ->first(['id', 'name', 'email', 'phone']);
+                
+                // If not found and author_id starts with AUTHOR, try converting to USER format
+                if (!$authorData && str_starts_with($visit->author_id, 'AUTHOR')) {
+                    $userId = str_replace('AUTHOR', 'USER', $visit->author_id);
+                    $authorData = \App\Models\User::where('id', $userId)
+                                                 ->where('role', 'author')
+                                                 ->first(['id', 'name', 'email', 'phone']);
+                }
+                
+                // If still not found, try reverse: USER to AUTHOR
+                if (!$authorData && str_starts_with($visit->author_id, 'USER')) {
+                    $authorId = str_replace('USER', 'AUTHOR', $visit->author_id);
+                    $authorData = \App\Models\User::where('id', $authorId)
+                                                 ->where('role', 'author')
+                                                 ->first(['id', 'name', 'email', 'phone']);
+                }
+                
+                // If still not found, try by name
+                if (!$authorData && !empty($visit->author_name)) {
+                    $authorData = \App\Models\User::where('name', 'LIKE', '%' . trim($visit->author_name) . '%')
+                                                 ->where('role', 'author')
+                                                 ->first(['id', 'name', 'email', 'phone']);
+                }
+                
+                if ($authorData) {
+                    // Merge or replace author data
+                    if (!$visit->author) {
+                        $visit->setRelation('author', $authorData);
+                    } else {
+                        // Fill missing email if found
+                        if (empty($visit->author->email) && !empty($authorData->email)) {
+                            $visit->author->email = $authorData->email;
+                        }
+                        if (empty($visit->author->phone) && !empty($authorData->phone)) {
+                            $visit->author->phone = $authorData->phone;
+                        }
+                        if (empty($visit->author->name) && !empty($authorData->name)) {
+                            $visit->author->name = $authorData->name;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return response()->json($visit);
+    }
 }

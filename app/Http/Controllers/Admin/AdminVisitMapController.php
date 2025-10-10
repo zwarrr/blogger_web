@@ -105,8 +105,8 @@ class AdminVisitMapController extends Controller
                     'menunggu_acc' => 'Menunggu ACC'
                 ];
                 
-                // Generate formatted visit ID (VST001, VST002, etc.)
-                $visitId = 'VST' . str_pad($visit->id, 3, '0', STR_PAD_LEFT);
+                // Use visit_id from database or generate formatted visit ID (VST0001, VST0002, etc.)
+                $visitId = $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT);
                 
                 return [
                     'id' => $visit->id,

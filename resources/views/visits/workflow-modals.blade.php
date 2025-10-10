@@ -9,7 +9,7 @@
         <div id="workflow-modal-{{ $visit->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="bg-black bg-opacity-50 absolute inset-0"></div>
             <div class="relative bg-white rounded-lg shadow-lg max-w-lg w-full p-6">
-                <h3 class="text-lg font-semibold">Aksi Workflow untuk #{{ $visit->id }}</h3>
+                <h3 class="text-lg font-semibold">Aksi Workflow untuk {{ $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}</h3>
                 <p class="text-sm text-gray-600 mt-2">Gunakan modal ini untuk menampilkan konfirmasi approve/reject/cancel.</p>
                 <div class="mt-4 flex justify-end gap-3">
                     <button type="button" onclick="document.getElementById('workflow-modal-{{ $visit->id }}').classList.add('hidden')" class="px-4 py-2 bg-gray-200 rounded">Tutup</button>

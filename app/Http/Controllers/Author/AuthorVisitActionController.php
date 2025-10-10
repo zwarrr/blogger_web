@@ -85,7 +85,7 @@ class AuthorVisitActionController extends Controller
 
             // Validate request
             $validated = $request->validate([
-                'new_visit_date' => 'required|date|after:now',
+                'visit_date' => 'required|date|after:now',
                 'reschedule_reason' => 'required|string|max:1000'
             ]);
             
@@ -101,7 +101,7 @@ class AuthorVisitActionController extends Controller
 
             // Update visit
             $updateData = [
-                'visit_date' => $validated['new_visit_date'],
+                'visit_date' => $validated['visit_date'],
                 'reschedule_count' => $visit->reschedule_count + 1,
                 'status' => 'belum_dikunjungi', // Reset status to pending
             ];
@@ -114,7 +114,17 @@ class AuthorVisitActionController extends Controller
                 $updateData['rescheduled_at'] = now();
             }
             if (Schema::hasColumn('visits', 'rescheduled_by')) {
-                $updateData['rescheduled_by'] = Auth::id();
+                // Handle both string and numeric user IDs
+                $currentUserId = Auth::id();
+                // If user ID is string (like USER001), extract numeric part or use a default
+                if (is_string($currentUserId)) {
+                    // Try to extract numeric part from string ID like USER001
+                    preg_match('/\d+/', $currentUserId, $matches);
+                    $numericId = !empty($matches) ? (int)$matches[0] : 1; // Default to 1 if no number found
+                    $updateData['rescheduled_by'] = $numericId;
+                } else {
+                    $updateData['rescheduled_by'] = $currentUserId;
+                }
             }
             
             \Log::info('Updating visit with data', $updateData);

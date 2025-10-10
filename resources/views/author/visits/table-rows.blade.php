@@ -7,7 +7,7 @@
         
         <!-- ID Kunjungan -->
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-            <div class="font-medium text-blue-600">{{ $visit->visit_id ?? 'N/A' }}</div>
+            <div class="font-medium text-blue-600">{{ $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}</div>
         </td>
         
         <!-- Auditor -->

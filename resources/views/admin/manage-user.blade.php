@@ -203,7 +203,7 @@
                     <td class="px-4 py-3">
                       <div class="flex justify-center">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          USR{{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}
+                          USR{{ str_pad($loop->iteration, 4, '0', STR_PAD_LEFT) }}
                         </span>
                       </div>
                     </td>

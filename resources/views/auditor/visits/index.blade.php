@@ -309,60 +309,60 @@
                     <!-- Total Kunjungan -->
                     <div class="bg-white rounded-lg border border-gray-200 p-5">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
                                     <i data-feather="map-pin" class="w-5 h-5"></i>
                                 </div>
                                 <h3 class="text-sm font-medium text-gray-500">Total Kunjungan</h3>
                             </div>
                             <span class="text-xs text-green-600">&nbsp;</span>
                         </div>
-                        <p class="text-2xl font-bold mt-2">{{ number_format($stats['total'] ?? 0) }}</p>
+                        <p class="text-2xl font-bold mt-3">{{ number_format($stats['total'] ?? 0) }}</p>
                         <p class="text-xs text-gray-500 mt-1">Seluruh periode</p>
                     </div>
 
                     <!-- Belum Dikunjungi -->
                     <div class="bg-white rounded-lg border border-gray-200 p-5">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
                                     <i data-feather="clock" class="w-5 h-5"></i>
                                 </div>
                                 <h3 class="text-sm font-medium text-gray-500">Belum Dikunjungi</h3>
                             </div>
                             <span class="text-xs text-green-600">&nbsp;</span>
                         </div>
-                        <p class="text-2xl font-bold mt-2">{{ number_format($stats['belum_dikunjungi'] ?? 0) }}</p>
+                        <p class="text-2xl font-bold mt-3">{{ number_format($stats['belum_dikunjungi'] ?? 0) }}</p>
                         <p class="text-xs text-gray-500 mt-1">{{ $stats['total'] > 0 ? round((($stats['belum_dikunjungi'] ?? 0) / $stats['total']) * 100, 1) : 0 }}% dari total</p>
                     </div>
 
                     <!-- Dalam Perjalanan -->
                     <div class="bg-white rounded-lg border border-gray-200 p-5">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
                                     <i data-feather="activity" class="w-5 h-5"></i>
                                 </div>
                                 <h3 class="text-sm font-medium text-gray-500">Dalam Perjalanan</h3>
                             </div>
                             <span class="text-xs text-green-600">&nbsp;</span>
                         </div>
-                        <p class="text-2xl font-bold mt-2">{{ number_format($stats['dalam_perjalanan'] ?? 0) }}</p>
+                        <p class="text-2xl font-bold mt-3">{{ number_format($stats['dalam_perjalanan'] ?? 0) }}</p>
                         <p class="text-xs text-gray-500 mt-1">{{ $stats['total'] > 0 ? round((($stats['dalam_perjalanan'] ?? 0) / $stats['total']) * 100, 1) : 0 }}% dari total</p>
                     </div>
 
                     <!-- Selesai -->
                     <div class="bg-white rounded-lg border border-gray-200 p-5">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
                                     <i data-feather="check-circle" class="w-5 h-5"></i>
                                 </div>
                                 <h3 class="text-sm font-medium text-gray-500">Selesai</h3>
                             </div>
                             <span class="text-xs text-green-600">&nbsp;</span>
                         </div>
-                        <p class="text-2xl font-bold mt-2">{{ number_format($stats['selesai'] ?? 0) }}</p>
+                        <p class="text-2xl font-bold mt-3">{{ number_format($stats['selesai'] ?? 0) }}</p>
                         <p class="text-xs text-gray-500 mt-1">{{ $stats['total'] > 0 ? round((($stats['selesai'] ?? 0) / $stats['total']) * 100, 1) : 0 }}% dari total</p>
                     </div>
                     @endisset
@@ -437,7 +437,7 @@
                                         <td class="px-4 py-3">
                                             <div class="flex justify-center">
                                                 <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">
-                                                    #{{ str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}
+                                                    {{ $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}
                                                 </span>
                                             </div>
                                         </td>
@@ -452,15 +452,78 @@
 
                                         <!-- Author -->
                                         <td class="px-4 py-3">
-                                            <div class="flex items-center justify-center">
-                                                <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-2">
+                                            <div class="flex items-center">
+                                                @php
+                                                    // Enhanced author data retrieval with comprehensive email handling
+                                                    $authorName = $visit->author->name ?? ($visit->author_name ?? 'Tidak Diketahui');
+                                                    $authorEmail = '';
+                                                    
+                                                    // Primary: Check loaded relationship first (for proper User IDs)
+                                                    if ($visit->author && !empty($visit->author->email)) {
+                                                        $authorEmail = $visit->author->email;
+                                                    } 
+                                                    // Secondary: Direct query by author_id (handle both USER and AUTHOR prefixes)
+                                                    elseif (!empty($visit->author_id)) {
+                                                        try {
+                                                            // Try with the exact author_id first
+                                                            $authorUser = \App\Models\User::where('id', $visit->author_id)
+                                                                                         ->where('role', 'author')
+                                                                                         ->first(['email', 'name', 'id']);
+                                                            
+                                                            // If not found and author_id starts with AUTHOR, try converting to USER format
+                                                            if (!$authorUser && str_starts_with($visit->author_id, 'AUTHOR')) {
+                                                                $userId = str_replace('AUTHOR', 'USER', $visit->author_id);
+                                                                $authorUser = \App\Models\User::where('id', $userId)
+                                                                                             ->where('role', 'author')
+                                                                                             ->first(['email', 'name', 'id']);
+                                                            }
+                                                            
+                                                            // If still not found, try reverse: USER to AUTHOR
+                                                            if (!$authorUser && str_starts_with($visit->author_id, 'USER')) {
+                                                                $authorId = str_replace('USER', 'AUTHOR', $visit->author_id);
+                                                                $authorUser = \App\Models\User::where('id', $authorId)
+                                                                                             ->where('role', 'author')
+                                                                                             ->first(['email', 'name', 'id']);
+                                                            }
+                                                            
+                                                            if ($authorUser && !empty($authorUser->email)) {
+                                                                $authorEmail = $authorUser->email;
+                                                                // Update name if better one found
+                                                                if (!empty($authorUser->name) && empty($visit->author->name ?? '')) {
+                                                                    $authorName = $authorUser->name;
+                                                                }
+                                                            }
+                                                        } catch (\Exception $e) {
+                                                            // Continue to next fallback
+                                                        }
+                                                    }
+                                                    // Tertiary: Query by name if author_name exists
+                                                    if (empty($authorEmail) && !empty($visit->author_name)) {
+                                                        try {
+                                                            $authorUser = \App\Models\User::where('name', 'LIKE', '%' . trim($visit->author_name) . '%')
+                                                                                         ->where('role', 'author')
+                                                                                         ->first(['email', 'name']);
+                                                            if ($authorUser && !empty($authorUser->email)) {
+                                                                $authorEmail = $authorUser->email;
+                                                            }
+                                                        } catch (\Exception $e) {
+                                                            // Continue to fallback
+                                                        }
+                                                    }
+                                                    
+                                                    // Final fallback for display
+                                                    if (empty($authorEmail)) {
+                                                        $authorEmail = 'Email tidak tersedia';
+                                                    }
+                                                @endphp
+                                                <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3 flex-shrink-0">
                                                     <span class="text-xs font-semibold text-orange-600">
-                                                        {{ strtoupper(substr($visit->author->name ?? 'N/A', 0, 1)) }}
+                                                        {{ strtoupper(substr($authorName, 0, 1)) }}
                                                     </span>
                                                 </div>
-                                                <div class="text-left">
-                                                    <div class="text-xs font-medium text-gray-900 truncate" style="max-width: 120px;">{{ $visit->author->name ?? 'N/A' }}</div>
-                                                    <div class="text-xs text-gray-500 truncate" style="max-width: 120px;">{{ $visit->author->email ?? '' }}</div>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="text-xs font-medium text-gray-900 truncate">{{ $authorName }}</div>
+                                                    <div class="text-xs text-gray-500 truncate">{{ $authorEmail }}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -486,8 +549,8 @@
                                                     ];
                                                     $statusLabel = $statusConfig[$visit->status] ?? ucfirst(str_replace('_', ' ', $visit->status));
                                                 @endphp
-                                                <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap animate-pulse">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                                <span class="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap animate-pulse">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                                                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                                     </svg>
                                                     {{ $statusLabel }}
@@ -501,7 +564,7 @@
                                                         class="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all duration-150 focus:outline-none"
                                                         onclick="toggleDropdown({{ $visit->id }})"
                                                         title="Menu Aksi">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 flex-shrink-0">
                                                         <path d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z" />
                                                     </svg>
                                                 </button>
@@ -513,17 +576,17 @@
                                                     <div class="py-1">
                                                         <button onclick="showDetailModal({{ $visit->id }})" 
                                                                 class="group flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-3 text-gray-500">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-3 text-gray-500 flex-shrink-0">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                             </svg>
                                                             Detail
                                                         </button>
                                                         
-                                                        @if(!in_array($visit->status, ['selesai', 'menunggu_acc']))
+                                                        @if(!in_array($visit->status, ['belum_dikunjungi', 'selesai', 'menunggu_acc']))
                                                             <button onclick="showCompleteModal({{ $visit->id }})" 
                                                                     class="group flex items-center w-full px-4 py-2.5 text-sm text-green-700 hover:bg-green-50 transition-colors duration-150">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-3 text-green-600">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-3 text-green-600 flex-shrink-0">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                                 </svg>
                                                                 Selesaikan
@@ -534,7 +597,7 @@
                                                         
                                                         <button onclick="downloadReport({{ $visit->id }})" 
                                                                 class="group flex items-center w-full px-4 py-2.5 text-sm text-gray-400 cursor-not-allowed transition-colors duration-150">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-3 text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-3 text-gray-400 flex-shrink-0">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                                             </svg>
                                                             Download
@@ -548,8 +611,10 @@
                                 @empty
                                     <tr>
                                         <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                                            <div class="flex flex-col items-center">
-                                                <i data-feather="inbox" class="w-12 h-12 text-gray-400 mb-4"></i>
+                                            <div class="flex flex-col items-center justify-center">
+                                                <div class="flex items-center justify-center mb-4">
+                                                    <i data-feather="inbox" class="w-12 h-12 text-gray-400"></i>
+                                                </div>
                                                 <p class="text-lg font-medium">Tidak ada data kunjungan</p>
                                                 <p class="text-sm">Belum ada kunjungan yang ditugaskan kepada Anda.</p>
                                             </div>
@@ -562,8 +627,8 @@
 
                     <!-- Loading State -->
                     <div x-show="loading" class="text-center py-8">
-                        <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-orange-500 transition ease-in-out duration-150">
-                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <div class="inline-flex items-center justify-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-orange-500 transition ease-in-out duration-150">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
@@ -834,6 +899,10 @@
                         paginationEl.innerHTML = data.pagination;
                     }
                     this.loading = false;
+                    // Sort table after content update
+                    setTimeout(function() {
+                        sortTableByVSTId();
+                    }, 50);
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -872,6 +941,56 @@
                 }
             }
         }
+    }
+
+    // Sort table by VST ID - Enhanced to regenerate sequential VST IDs for role-specific data
+    function sortTableByVSTId() {
+        console.log('Starting VST ID sorting for Auditor panel...');
+        var tbody = document.getElementById('visits-table-body');
+        if (!tbody) {
+            console.log('Table body not found');
+            return;
+        }
+        
+        var rows = Array.from(tbody.querySelectorAll('tr')).filter(row => {
+            // Only process data rows (skip empty or header rows)
+            var vstIdSpan = row.querySelector('td:nth-child(2) span');
+            return vstIdSpan && vstIdSpan.textContent.trim().startsWith('VST');
+        });
+        
+        console.log('Found ' + rows.length + ' VST rows to sort');
+        if (rows.length === 0) return;
+        
+        // Sort rows by current DOM order (maintain server-side ordering) and assign sequential VST IDs
+        // Server already provides proper ordering (newest first), so we maintain that order
+        // and just assign VST0001, VST0002, etc. based on current position
+        
+        // Clear tbody and append rows with sequential VST IDs starting from VST0001
+        // The rows are already in the correct order from server (newest first)
+        tbody.innerHTML = '';
+        rows.forEach(function(row, index) {
+            // Update row number in first column to be sequential (1, 2, 3...)
+            var rowNumberCell = row.querySelector('td:first-child div');
+            if (rowNumberCell) {
+                rowNumberCell.textContent = (index + 1);
+            }
+            
+            // Update VST ID to be sequential starting from VST0001
+            var vstIdSpan = row.querySelector('td:nth-child(2) span');
+            if (vstIdSpan) {
+                // Store original VST ID as data attribute for backend operations before changing
+                if (!vstIdSpan.getAttribute('data-original-vst')) {
+                    vstIdSpan.setAttribute('data-original-vst', vstIdSpan.textContent.trim());
+                }
+                
+                var newVstId = 'VST' + String(index + 1).padStart(4, '0');
+                vstIdSpan.textContent = newVstId;
+            }
+            
+            tbody.appendChild(row);
+        });
+        
+        console.log('VST ID sorting completed for Auditor panel with sequential VST IDs');
     }
 
     // Dropdown functionality - Fixed positioning
@@ -970,6 +1089,11 @@
     }
 
     function generateDetailContent(visit) {
+        // Validate visit object
+        if (!visit || typeof visit !== 'object') {
+            return '<div class="text-red-600 text-center py-4">Data kunjungan tidak valid</div>';
+        }
+
         var statusConfig = {
             'selesai': { color: 'orange', text: 'Selesai' },
             'menunggu_acc': { color: 'orange', text: 'Menunggu ACC' },
@@ -981,48 +1105,185 @@
             'pending': { color: 'orange', text: 'Menunggu' }
         };
         
-        var status = statusConfig[visit.status] || { color: 'orange', text: visit.status };
-        var visitDate = new Date(visit.visit_date);
+        var status = statusConfig[visit.status] || { color: 'orange', text: String(visit.status || 'Unknown') };
+        var visitDate = visit.visit_date ? new Date(visit.visit_date) : new Date();
         
         var content = '<div class="space-y-6 max-h-96 overflow-y-auto">';
         
-        // Basic Information
+        // Basic Information - sanitize data
+        var visitId = String(visit.visit_id || 'VST' + String(visit.id || 0).padStart(4, '0'));
+        var statusText = String(status.text || 'Unknown').replace(/[<>\"']/g, '');
+        
         content += '<div class="grid grid-cols-2 gap-4">';
         content += '<div>';
         content += '<label class="block text-xs font-medium text-gray-700 mb-1">ID Kunjungan</label>';
-        content += '<div class="text-sm font-semibold text-gray-900">' + (visit.visit_id || '#' + visit.id) + '</div>';
+        content += '<div class="text-sm font-semibold text-gray-900">' + visitId + '</div>';
         content += '</div>';
         content += '<div>';
         content += '<label class="block text-xs font-medium text-gray-700 mb-1">Status</label>';
         content += '<span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium bg-' + status.color + '-50 text-' + status.color + '-700 border border-' + status.color + '-200">';
-        content += status.text;
+        content += statusText;
         content += '</span>';
         content += '</div>';
         content += '</div>';
         
-        // Date and Duration
-        content += '<div class="grid grid-cols-2 gap-4">';
+        // Date Information with Reschedule Info
+        content += '<div class="grid grid-cols-1 gap-4">';
         content += '<div>';
-        content += '<label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Kunjungan</label>';
-        content += '<div class="text-sm font-medium text-gray-900">' + visitDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + '</div>';
-        content += '<div class="text-xs text-gray-600">' + visitDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB</div>';
-        content += '</div>';
-        if (visit.report && (visit.report.visit_start_time || visit.report.visit_end_time)) {
-            content += '<div>';
-            content += '<label class="block text-xs font-medium text-gray-700 mb-1">Waktu Kunjungan</label>';
-            if (visit.report.visit_start_time) {
-                content += '<div class="text-xs text-gray-600">Mulai: ' + new Date(visit.report.visit_start_time).toLocaleTimeString('id-ID') + '</div>';
-            }
-            if (visit.report.visit_end_time) {
-                content += '<div class="text-xs text-gray-600">Selesai: ' + new Date(visit.report.visit_end_time).toLocaleTimeString('id-ID') + '</div>';
-            }
+        content += '<label class="block text-xs font-medium text-gray-700 mb-1">Jadwal Kunjungan</label>';
+        content += '<div class="text-sm font-medium text-gray-900">' + visitDate.toLocaleDateString('id-ID', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        }) + '</div>';
+        content += '<div class="text-xs text-gray-600">Pukul ' + visitDate.toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        }) + ' WIB</div>';
+        
+        // Show reschedule information if available
+        if (visit.reschedule_count && visit.reschedule_count > 0) {
+            content += '<div class="mt-3">';
+            content += '<div class="bg-amber-50 border border-amber-200 rounded-lg p-3">';
+            content += '<div class="flex items-center mb-2">';
+            content += '<svg class="w-4 h-4 text-amber-600 mr-2" fill="currentColor" viewBox="0 0 20 20">';
+            content += '<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>';
+            content += '</svg>';
+            content += '<span class="text-sm font-semibold text-amber-800">Riwayat Reschedule</span>';
             content += '</div>';
-        } else {
-            content += '<div>';
-            content += '<label class="block text-xs font-medium text-gray-700 mb-1">Durasi</label>';
-            content += '<div class="text-sm font-medium text-gray-900">' + (visit.duration || 'Belum ditentukan') + '</div>';
+            
+            content += '<div class="space-y-2">';
+            
+            // Ringkasan reschedule
+            content += '<div class="text-sm text-amber-700">Total perubahan jadwal: <span class="font-medium">' + visit.reschedule_count + ' kali</span></div>';
+            
+            // Tampilkan ringkasan reschedule terakhir
+            if (visit.reschedule_reason) {
+                content += '<div class="bg-white rounded-md p-2 border border-amber-100">';
+                content += '<div class="text-xs font-medium text-gray-700 mb-1">Reschedule Terakhir:</div>';
+                
+                // Ringkasan info reschedule
+                if (visit.rescheduled_at) {
+                    var rescheduleDate = new Date(visit.rescheduled_at);
+                    content += '<div class="text-xs text-gray-600 mb-1">';
+                    content += rescheduleDate.toLocaleDateString('id-ID', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric' 
+                    });
+                    content += '</div>';
+                }
+                
+                // Truncate reason if too long (show max 60 characters untuk ringkasan)
+                var fullReason = visit.reschedule_reason;
+                var shortReason = fullReason.length > 60 ? fullReason.substring(0, 60) + '...' : fullReason;
+                
+                content += '<div class="text-sm text-gray-900 mb-2">' + shortReason + '</div>';
+                
+                // Tombol lihat detail timeline
+                content += '<button onclick="toggleRescheduleTimeline(' + visit.id + ')" class="text-blue-600 hover:text-blue-800 text-xs font-medium underline focus:outline-none" id="timeline-toggle-' + visit.id + '">lihat detail riwayat</button>';
+                
+                content += '</div>';
+                
+                // Timeline detail (hidden by default)
+                content += '<div id="reschedule-timeline-' + visit.id + '" class="bg-white rounded-md border border-amber-100 mt-2" style="display: none;">';
+                content += '<div class="p-3">';
+                content += '<div class="text-xs font-semibold text-amber-800 mb-3 flex items-center">';
+                content += '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">';
+                content += '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>';
+                content += '</svg>Timeline Riwayat Reschedule</div>';
+                
+                // Timeline items
+                content += '<div class="space-y-3">';
+                
+                // Reschedule terakhir (detail lengkap)
+                content += '<div class="flex">';
+                content += '<div class="flex-shrink-0 w-2 h-2 bg-amber-400 rounded-full mt-2 mr-3"></div>';
+                content += '<div class="flex-grow">';
+                content += '<div class="text-xs font-medium text-gray-900">Reschedule #' + visit.reschedule_count + '</div>';
+                if (visit.rescheduled_at) {
+                    content += '<div class="text-xs text-gray-500">' + rescheduleDate.toLocaleDateString('id-ID', { 
+                        weekday: 'long', 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    }) + ' pukul ' + rescheduleDate.toLocaleTimeString('id-ID', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false 
+                    }) + ' WIB</div>';
+                }
+                content += '<div class="text-xs text-gray-700 mt-1 p-2 bg-gray-50 rounded">';
+                content += '<strong>Alasan:</strong> ' + visit.reschedule_reason;
+                content += '</div>';
+                content += '</div>';
+                content += '</div>';
+                
+                // Timeline item untuk kunjungan asli
+                content += '<div class="flex">';
+                content += '<div class="flex-shrink-0 w-2 h-2 bg-gray-300 rounded-full mt-2 mr-3"></div>';
+                content += '<div class="flex-grow">';
+                content += '<div class="text-xs font-medium text-gray-900">Jadwal Awal</div>';
+                content += '<div class="text-xs text-gray-500">Kunjungan dijadwalkan pertama kali</div>';
+                content += '<div class="text-xs text-gray-700 mt-1">Status: <span class="text-green-600">Terjadwal</span></div>';
+                content += '</div>';
+                content += '</div>';
+                
+                content += '</div>';
+                content += '</div>';
+                content += '</div>';
+            }
+            
+            if (visit.rescheduled_at) {
+                var rescheduleDate = new Date(visit.rescheduled_at);
+                content += '<div class="bg-white rounded-md p-2 border border-amber-100">';
+                content += '<div class="text-xs font-medium text-gray-700 mb-1">Waktu Perubahan Terakhir:</div>';
+                content += '<div class="text-sm text-gray-900">';
+                content += rescheduleDate.toLocaleDateString('id-ID', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+                content += ' pukul ' + rescheduleDate.toLocaleTimeString('id-ID', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                }) + ' WIB</div>';
+                content += '</div>';
+            }
+            
+
+            
+            // Show remaining reschedule attempts
+            var remainingAttempts = 3 - visit.reschedule_count;
+            if (remainingAttempts > 0) {
+                content += '<div class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">';
+                content += '<div class="text-xs text-blue-700">';
+                content += '<svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">';
+                content += '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>';
+                content += '</svg>';
+                content += 'Sisa kesempatan reschedule: ' + remainingAttempts + ' kali';
+                content += '</div>';
+                content += '</div>';
+            } else {
+                content += '<div class="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">';
+                content += '<div class="text-xs text-red-700">';
+                content += '<svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">';
+                content += '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>';
+                content += '</svg>';
+                content += 'Batas maksimum reschedule tercapai';
+                content += '</div>';
+                content += '</div>';
+            }
+            
+            content += '</div>';
+            content += '</div>';
             content += '</div>';
         }
+        content += '</div>';
         content += '</div>';
         
         // Author and Auditor Information
@@ -1034,46 +1295,71 @@
         content += '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">';
         content += '<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>';
         content += '</svg>Author</label>';
-        if (visit.author && visit.author.name) {
-            content += '<div class="text-sm font-medium text-gray-900 mb-1">' + visit.author.name + '</div>';
-            if (visit.author.email) {
-                content += '<div class="flex items-center text-xs text-gray-600 mb-1">';
-                content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
-                content += '<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>';
-                content += '<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>';
-                content += '</svg>' + visit.author.email + '</div>';
-            }
-            if (visit.author.phone) {
-                content += '<div class="flex items-center text-xs text-gray-600">';
-                content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
-                content += '<path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>';
-                content += '</svg>' + visit.author.phone + '</div>';
-            }
+        
+        // Get author data with comprehensive fallback logic and sanitize
+        var authorName = String((visit.author && visit.author.name) ? visit.author.name : (visit.author_name || 'Tidak Diketahui'));
+        var authorEmail = '';
+        var authorPhone = String((visit.author && visit.author.phone) ? visit.author.phone : '');
+        
+        // Comprehensive email handling - check multiple sources
+        if (visit.author && visit.author.email && visit.author.email.trim() !== '') {
+            authorEmail = String(visit.author.email);
+        } else if (visit.author_email && visit.author_email.trim() !== '') {
+            authorEmail = String(visit.author_email);
         } else {
-            content += '<div class="text-sm text-gray-500 italic">Data author tidak tersedia</div>';
+            // If no email found in the data passed to modal, show fallback
+            authorEmail = 'Email tidak tersedia';
+        }
+        
+        // Sanitize HTML to prevent issues
+        authorName = authorName.replace(/[<>\"']/g, '');
+        authorEmail = authorEmail.replace(/[<>\"']/g, '');
+        authorPhone = authorPhone.replace(/[<>\"']/g, '');
+        
+        content += '<div class="text-sm font-medium text-gray-900 mb-1">' + authorName + '</div>';
+        
+        // Always show email section, even if it's the fallback text
+        content += '<div class="flex items-center text-xs text-gray-600 mb-1">';
+        content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
+        content += '<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>';
+        content += '<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>';
+        if (authorEmail === 'Email tidak tersedia') {
+            content += '</svg><span class="italic text-gray-400">' + authorEmail + '</span></div>';
+        } else {
+            content += '</svg>' + authorEmail + '</div>';
+        }
+        
+        if (authorPhone) {
+            content += '<div class="flex items-center text-xs text-gray-600">';
+            content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
+            content += '<path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>';
+            content += '</svg>' + authorPhone + '</div>';
         }
         content += '</div>';
         
-        // Auditor Info
+        // Auditor Info - with data sanitization
         content += '<div class="bg-green-50 p-3 rounded-lg border border-green-200">';
         content += '<label class="flex items-center text-sm font-medium text-green-800 mb-2">';
         content += '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">';
         content += '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>';
         content += '</svg>Auditor</label>';
         if (visit.auditor && visit.auditor.name) {
-            content += '<div class="text-sm font-medium text-gray-900 mb-1">' + visit.auditor.name + '</div>';
+            var auditorName = String(visit.auditor.name).replace(/[<>\"']/g, '');
+            content += '<div class="text-sm font-medium text-gray-900 mb-1">' + auditorName + '</div>';
             if (visit.auditor.email) {
+                var auditorEmail = String(visit.auditor.email).replace(/[<>\"']/g, '');
                 content += '<div class="flex items-center text-xs text-gray-600 mb-1">';
                 content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
                 content += '<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>';
                 content += '<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>';
-                content += '</svg>' + visit.auditor.email + '</div>';
+                content += '</svg>' + auditorEmail + '</div>';
             }
             if (visit.auditor.phone) {
+                var auditorPhone = String(visit.auditor.phone).replace(/[<>\"']/g, '');
                 content += '<div class="flex items-center text-xs text-gray-600">';
                 content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
                 content += '<path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>';
-                content += '</svg>' + visit.auditor.phone + '</div>';
+                content += '</svg>' + auditorPhone + '</div>';
             }
         } else {
             content += '<div class="text-sm text-gray-500 italic">Data auditor tidak tersedia</div>';
@@ -1091,11 +1377,12 @@
             content += '</svg>Lokasi Kunjungan</label>';
             
             if (visit.location_address) {
+                var locationAddress = String(visit.location_address).replace(/[<>\"']/g, '');
                 content += '<div class="text-sm text-gray-900 mb-2">';
                 content += '<svg class="w-4 h-4 inline mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20">';
                 content += '<path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>';
                 content += '</svg>';
-                content += visit.location_address;
+                content += locationAddress;
                 content += '</div>';
             }
             
@@ -1995,6 +2282,38 @@
         return statusConfigs[status] || { color: 'gray', text: status };
     }
 
+    // Toggle reschedule timeline between summary and full detail
+    function toggleRescheduleTimeline(visitId) {
+        const timelineDiv = document.getElementById('reschedule-timeline-' + visitId);
+        const toggleBtn = document.getElementById('timeline-toggle-' + visitId);
+        
+        if (timelineDiv && toggleBtn) {
+            if (timelineDiv.style.display === 'none') {
+                // Show timeline detail
+                timelineDiv.style.display = 'block';
+                toggleBtn.textContent = 'sembunyikan riwayat';
+                
+                // Add smooth animation
+                timelineDiv.style.opacity = '0';
+                timelineDiv.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    timelineDiv.style.transition = 'all 0.3s ease-out';
+                    timelineDiv.style.opacity = '1';
+                    timelineDiv.style.transform = 'translateY(0)';
+                }, 10);
+            } else {
+                // Hide timeline detail
+                timelineDiv.style.transition = 'all 0.2s ease-in';
+                timelineDiv.style.opacity = '0';
+                timelineDiv.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    timelineDiv.style.display = 'none';
+                    toggleBtn.textContent = 'lihat detail riwayat';
+                }, 200);
+            }
+        }
+    }
+
     // Download report function
     function downloadReport(id) {
         // Close any open dropdowns
@@ -2054,6 +2373,12 @@
             container.style.position = 'relative';
         });
         
+        // Sort table by VST ID on page load with longer delay to ensure content is loaded
+        console.log('Auditor page loaded, scheduling VST ID sorting...');
+        setTimeout(function() {
+            sortTableByVSTId();
+        }, 1000);
+        
         console.log('Auditor visit management system loaded successfully');
     });
 
@@ -2076,12 +2401,12 @@
                         maxZoom: 19
                     }).addTo(map);
                     
-                    // Add marker with custom icon (no blue)
+                    // Add marker with custom icon (no blue) - simplified SVG to avoid path errors
                     var redIcon = L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#dc2626" width="32" height="32"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>'),
+                        iconUrl: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#dc2626" width="32" height="32"><circle cx="12" cy="9" r="7" fill="#dc2626"/><circle cx="12" cy="9" r="3" fill="white"/></svg>'),
                         iconSize: [32, 32],
-                        iconAnchor: [16, 32],
-                        popupAnchor: [0, -32]
+                        iconAnchor: [16, 16],
+                        popupAnchor: [0, -16]
                     });
                     
                     L.marker([mapConfig.lat, mapConfig.lng], {icon: redIcon})

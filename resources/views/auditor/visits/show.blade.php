@@ -51,7 +51,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <dt class="text-sm font-medium text-gray-500 mb-1">ID Kunjungan</dt>
-                                    <dd class="text-sm font-semibold text-gray-900">#{{ str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}</dd>
+                                    <dd class="text-sm font-semibold text-gray-900">{{ $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}</dd>
                                 </div>
                                 <div>
                                     <dt class="text-sm font-medium text-gray-500 mb-1">Status</dt>

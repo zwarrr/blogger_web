@@ -114,6 +114,89 @@
         from { opacity: 0; }
         to { opacity: 1; }
     }
+    
+    /* Detail Modal Content Styling - Same as Auditor */
+    #detailModal .space-y-6 > div {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    /* Info Cards Styling */
+    #detailModal .bg-blue-50 {
+        border-left: 4px solid #3b82f6;
+    }
+    
+    #detailModal .bg-green-50 {
+        border-left: 4px solid #10b981;
+    }
+    
+    #detailModal .bg-yellow-50 {
+        border-left: 4px solid #f59e0b;
+    }
+    
+    #detailModal .bg-amber-50 {
+        border-left: 4px solid #f59e0b;
+    }
+    
+    #detailModal .bg-gray-50 {
+        border-left: 4px solid #6b7280;
+    }
+    
+    /* Enhanced scrollbar styling for modal */
+    #detailModalBody::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    #detailModalBody::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+    }
+    
+    #detailModalBody::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    
+    #detailModalBody::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+    
+    /* Status badge styling */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: 1px solid;
+    }
+    
+    /* Timeline styling for reschedule info */
+    .timeline-item {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+    
+    .timeline-item:before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0.5rem;
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background-color: #f59e0b;
+    }
+    
+    .timeline-item:not(:last-child):after {
+        content: '';
+        position: absolute;
+        left: 0.75rem;
+        top: 1rem;
+        bottom: -0.5rem;
+        width: 1px;
+        background-color: #e5e7eb;
+    }
 </style>
 @endpush
 
@@ -512,7 +595,7 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2">
                         Tanggal Baru
                     </label>
-                    <input type="date" id="newDate" name="new_date" required
+                    <input type="datetime-local" id="new_visit_date" name="new_visit_date" required
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
@@ -618,107 +701,52 @@
 
 @push('scripts')
 <script>
-// URL Parameter Utility Function
-function updateUrlParameter(url, param, paramVal) {
-    var newAdditionalURL = "";
-    var tempArray = url.split("?");
-    var baseURL = tempArray[0];
-    var additionalURL = tempArray[1];
-    var temp = "";
-    if (additionalURL) {
-        tempArray = additionalURL.split("&");
-        for (var i = 0; i < tempArray.length; i++) {
-            if (tempArray[i].split('=')[0] != param) {
-                newAdditionalURL += temp + tempArray[i];
-                temp = "&";
-            }
+// Sort table by VST ID - Enhanced to regenerate sequential VST IDs for role-specific data
+function sortTableByVSTId() {
+    console.log('Starting VST ID sorting for Author panel...');
+    var tbody = document.getElementById('visits-table-body');
+    if (!tbody) {
+        console.log('Table body not found');
+        return;
+    }
+    
+    var rows = Array.from(tbody.querySelectorAll('tr')).filter(row => {
+        // Only process data rows (skip empty or header rows)
+        var vstIdSpan = row.querySelector('td:nth-child(2) span');
+        return vstIdSpan && vstIdSpan.textContent.trim().startsWith('VST');
+    });
+    
+    console.log('Found ' + rows.length + ' VST rows to sort');
+    if (rows.length === 0) return;
+    
+    // Clear tbody and append rows with sequential VST IDs starting from VST0001
+    tbody.innerHTML = '';
+    rows.forEach(function(row, index) {
+        // Update row number in first column to be sequential (1, 2, 3...)
+        var rowNumberCell = row.querySelector('td:first-child div');
+        if (rowNumberCell) {
+            rowNumberCell.textContent = (index + 1);
         }
-    }
-    if (paramVal != "") {
-        var rows_txt = temp + "" + param + "=" + paramVal;
-        return baseURL + "?" + newAdditionalURL + rows_txt;
-    } else {
-        return baseURL + "?" + newAdditionalURL;
-    }
+        
+        // Update VST ID to be sequential starting from VST0001
+        var vstIdSpan = row.querySelector('td:nth-child(2) span');
+        if (vstIdSpan) {
+            // Store original VST ID as data attribute for backend operations before changing
+            if (!vstIdSpan.getAttribute('data-original-vst')) {
+                vstIdSpan.setAttribute('data-original-vst', vstIdSpan.textContent.trim());
+            }
+            
+            var newVstId = 'VST' + String(index + 1).padStart(4, '0');
+            vstIdSpan.textContent = newVstId;
+        }
+        
+        tbody.appendChild(row);
+    });
+    
+    console.log('VST ID sorting completed for Author panel with sequential VST IDs');
 }
 
-// Modal Functions - Same styling as Auditor
-function showNotificationModal(title, message, type = 'info') {
-    const modal = document.getElementById('notificationModal');
-    const header = document.getElementById('notificationHeader');
-    const icon = document.getElementById('notificationIcon');
-    const titleEl = document.getElementById('notificationTitleText');
-    const bodyIcon = document.getElementById('notificationBodyIcon');
-    const messageEl = document.getElementById('notificationMessage');
-    const okButton = document.getElementById('notificationOkButton');
-    
-    titleEl.textContent = title;
-    messageEl.textContent = message;
-    
-    // Set colors and icons based on type - Same as Auditor
-    if (type === 'success') {
-        header.className = 'bg-green-500 text-white px-6 py-4 rounded-t-lg flex items-center justify-between';
-        icon.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
-        bodyIcon.innerHTML = '<svg class="w-16 h-16 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>';
-        okButton.className = 'px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2';
-    } else if (type === 'error') {
-        header.className = 'bg-red-500 text-white px-6 py-4 rounded-t-lg flex items-center justify-between';
-        icon.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
-        bodyIcon.innerHTML = '<svg class="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
-        okButton.className = 'px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2';
-    } else if (type === 'warning') {
-        header.className = 'bg-yellow-500 text-white px-6 py-4 rounded-t-lg flex items-center justify-between';
-        icon.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
-        bodyIcon.innerHTML = '<svg class="w-16 h-16 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
-        okButton.className = 'px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2';
-    } else {
-        header.className = 'bg-gray-600 text-white px-6 py-4 rounded-t-lg flex items-center justify-between';
-        icon.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>';
-        bodyIcon.innerHTML = '<svg class="w-16 h-16 text-gray-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>';
-        okButton.className = 'px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2';
-    }
-    
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeNotificationModal() {
-    document.getElementById('notificationModal').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-function showConfirmationModal(title, message, onConfirm) {
-    const modal = document.getElementById('confirmationModal');
-    const titleEl = document.getElementById('confirmationTitle');
-    const messageEl = document.getElementById('confirmationMessage');
-    const yesButton = document.getElementById('confirmationYesButton');
-    
-    titleEl.textContent = title;
-    messageEl.textContent = message;
-    
-    yesButton.onclick = function() {
-        closeConfirmationModal();
-        onConfirm();
-    };
-    
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeConfirmationModal() {
-    document.getElementById('confirmationModal').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-function closeRescheduleModal() {
-    const modal = document.getElementById('rescheduleModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
-    }
-}
-
-// Enhanced dropdown functionality with proper positioning - sama dengan Auditor
+// Dropdown functionality - Fixed positioning
 function toggleDropdown(id) {
     const dropdown = document.getElementById(`dropdown-${id}`);
     const button = document.querySelector(`[onclick="toggleDropdown(${id})"]`);
@@ -734,15 +762,15 @@ function toggleDropdown(id) {
         const buttonRect = button.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
-        const dropdownWidth = 192; // w-48 = 12rem = 192px
-        const dropdownHeight = 120; // estimated height
+        const dropdownWidth = 180;
+        const dropdownHeight = 140;
         
         // Reset positioning
         dropdown.style.position = 'fixed';
         dropdown.style.zIndex = '99999';
         
         // Calculate positions
-        let top = buttonRect.bottom + 8;
+        let top = buttonRect.bottom + 5;
         let left = buttonRect.left;
         
         // Adjust if dropdown goes off right edge
@@ -752,7 +780,7 @@ function toggleDropdown(id) {
         
         // Adjust if dropdown goes off bottom edge
         if (top + dropdownHeight > viewportHeight) {
-            top = buttonRect.top - dropdownHeight - 8;
+            top = buttonRect.top - dropdownHeight - 5;
         }
         
         // Ensure dropdown doesn't go off left edge
@@ -781,9 +809,9 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Modal functions - Same as Auditor
+// Author-specific action functions
 function showDetailModal(id) {
-    // Close any open dropdowns first
+    // Close any open dropdowns
     document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
     
     // Show loading in modal
@@ -792,85 +820,34 @@ function showDetailModal(id) {
     modalBody.innerHTML = '<div class="flex justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div></div>';
     modal.classList.remove('hidden');
     
-    // Fetch visit details (same endpoint as auditor)
-    fetch(`/author/visits/${id}/detail`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            modalBody.innerHTML = generateDetailContent(data.data);
-            // Initialize any pending maps
-            setTimeout(initializePendingMaps, 100);
-        } else {
+    // Fetch visit details
+    fetch(`/author/visits/${id}/detail`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                modalBody.innerHTML = generateDetailContent(data.data);
+            } else {
+                modalBody.innerHTML = '<div class="text-red-600 text-center py-4">Gagal memuat detail kunjungan</div>';
+            }
+        })
+        .catch(error => {
             modalBody.innerHTML = '<div class="text-red-600 text-center py-4">Gagal memuat detail kunjungan</div>';
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching visit details:', error);
-        modalBody.innerHTML = '<div class="text-red-600 text-center py-4">Terjadi kesalahan saat memuat detail kunjungan</div>';
-    });
+        });
 }
 
 function closeDetailModal() {
     document.getElementById('detailModal').classList.add('hidden');
 }
 
-// Function removed - using newer version with confirmation modal below
-
-function rescheduleVisit(visitId) {
-    const newDate = document.getElementById('newDate').value;
-    const reason = document.getElementById('rescheduleReason').value;
-    
-    if (!newDate) {
-        showNotificationModal('Validation Error', 'Tanggal baru harus dipilih.', 'warning');
-        return;
-    }
-    
-    if (!reason.trim()) {
-        showNotificationModal('Validation Error', 'Alasan reschedule harus diisi.', 'warning');
-        return;
-    }
-    
-    fetch(`/author/visits/${visitId}/reschedule`, {
-        method: 'PATCH',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            visit_date: newDate,
-            reschedule_reason: reason
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            closeRescheduleModal();
-            showNotificationModal('Berhasil!', data.message || 'Jadwal berhasil diatur ulang.', 'success');
-            setTimeout(() => {
-                location.reload();
-            }, 2000);
-        } else {
-            showNotificationModal('Error', data.message || 'Gagal melakukan reschedule.', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotificationModal('Error', 'Terjadi kesalahan sistem.', 'error');
-    });
-}
-
-// Generate Detail Content - Same as Auditor
 function generateDetailContent(visit) {
+    // Validate visit object
+    if (!visit || typeof visit !== 'object') {
+        return '<div class="text-red-600 text-center py-4">Data kunjungan tidak valid</div>';
+    }
+
     var statusConfig = {
         'selesai': { color: 'orange', text: 'Selesai' },
-        'menunggu_acc': { color: 'purple', text: 'Menunggu ACC' },
+        'menunggu_acc': { color: 'orange', text: 'Menunggu ACC' },
         'sedang_dikunjungi': { color: 'orange', text: 'Sedang Dikunjungi' },
         'dalam_perjalanan': { color: 'orange', text: 'Dalam Perjalanan' },
         'belum_dikunjungi': { color: 'orange', text: 'Belum Dikunjungi' },
@@ -879,77 +856,145 @@ function generateDetailContent(visit) {
         'pending': { color: 'orange', text: 'Menunggu' }
     };
     
-    var status = statusConfig[visit.status] || { color: 'orange', text: visit.status };
-    var visitDate = new Date(visit.visit_date);
+    var status = statusConfig[visit.status] || { color: 'orange', text: String(visit.status || 'Unknown') };
+    var visitDate = visit.visit_date ? new Date(visit.visit_date) : new Date();
     
     var content = '<div class="space-y-6 max-h-96 overflow-y-auto">';
     
-    // Basic Information
+    // Basic Information - sanitize data
+    var visitId = String(visit.visit_id || 'VST' + String(visit.id || 0).padStart(4, '0'));
+    var statusText = String(status.text || 'Unknown').replace(/[<>\"']/g, '');
+    
     content += '<div class="grid grid-cols-2 gap-4">';
     content += '<div>';
     content += '<label class="block text-xs font-medium text-gray-700 mb-1">ID Kunjungan</label>';
-    content += '<div class="text-sm font-semibold text-gray-900">' + (visit.visit_id || '#' + visit.id) + '</div>';
+    content += '<div class="text-sm font-semibold text-gray-900">' + visitId + '</div>';
     content += '</div>';
     content += '<div>';
     content += '<label class="block text-xs font-medium text-gray-700 mb-1">Status</label>';
-    content += '<span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium bg-' + status.color + '-50 text-' + status.color + '-700 border border-' + status.color + '-200 whitespace-nowrap animate-pulse">';
-    content += '<svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>';
-    content += status.text;
+    content += '<span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium bg-' + status.color + '-50 text-' + status.color + '-700 border border-' + status.color + '-200">';
+    content += statusText;
     content += '</span>';
     content += '</div>';
     content += '</div>';
     
-    // Date and Duration
-    content += '<div class="grid grid-cols-2 gap-4">';
+    // Date Information with Reschedule Info
+    content += '<div class="grid grid-cols-1 gap-4">';
     content += '<div>';
-    content += '<label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Kunjungan</label>';
-    content += '<div class="text-sm font-medium text-gray-900">' + visitDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + '</div>';
-    content += '<div class="text-xs text-gray-600">' + visitDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB</div>';
-    content += '</div>';
-    if (visit.report && (visit.report.visit_start_time || visit.report.visit_end_time)) {
-        content += '<div>';
-        content += '<label class="block text-xs font-medium text-gray-700 mb-1">Waktu Kunjungan</label>';
-        if (visit.report.visit_start_time) {
-            content += '<div class="text-xs text-gray-600">Mulai: ' + new Date(visit.report.visit_start_time).toLocaleTimeString('id-ID') + '</div>';
-        }
-        if (visit.report.visit_end_time) {
-            content += '<div class="text-xs text-gray-600">Selesai: ' + new Date(visit.report.visit_end_time).toLocaleTimeString('id-ID') + '</div>';
-        }
+    content += '<label class="block text-xs font-medium text-gray-700 mb-1">Jadwal Kunjungan</label>';
+    content += '<div class="text-sm font-medium text-gray-900">' + visitDate.toLocaleDateString('id-ID', { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+    }) + '</div>';
+    content += '<div class="text-xs text-gray-600">Pukul ' + visitDate.toLocaleTimeString('id-ID', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+    }) + ' WIB</div>';
+    
+    // Show reschedule information if available
+    if (visit.reschedule_count && visit.reschedule_count > 0) {
+        content += '<div class="mt-3">';
+        content += '<div class="bg-amber-50 border border-amber-200 rounded-lg p-3">';
+        content += '<div class="flex items-center mb-2">';
+        content += '<svg class="w-4 h-4 text-amber-600 mr-2" fill="currentColor" viewBox="0 0 20 20">';
+        content += '<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>';
+        content += '</svg>';
+        content += '<span class="text-sm font-semibold text-amber-800">Riwayat Reschedule</span>';
         content += '</div>';
-    } else {
-        content += '<div>';
-        content += '<label class="block text-xs font-medium text-gray-700 mb-1">Durasi</label>';
-        content += '<div class="text-sm font-medium text-gray-900">' + (visit.duration || 'Belum ditentukan') + '</div>';
+        
+        content += '<div class="space-y-2">';
+        content += '<div class="text-sm text-amber-700">Total perubahan jadwal: <span class="font-medium">' + visit.reschedule_count + ' kali</span></div>';
+        
+        if (visit.reschedule_reason) {
+            content += '<div class="bg-white rounded-md p-2 border border-amber-100">';
+            content += '<div class="text-xs font-medium text-gray-700 mb-1">Reschedule Terakhir:</div>';
+            content += '<div class="text-sm text-gray-900 mb-2">' + visit.reschedule_reason + '</div>';
+            content += '</div>';
+        }
+        
+        if (visit.rescheduled_at) {
+            var rescheduleDate = new Date(visit.rescheduled_at);
+            content += '<div class="bg-white rounded-md p-2 border border-amber-100">';
+            content += '<div class="text-xs font-medium text-gray-700 mb-1">Waktu Perubahan Terakhir:</div>';
+            content += '<div class="text-sm text-gray-900">';
+            content += rescheduleDate.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            content += ' pukul ' + rescheduleDate.toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            }) + ' WIB</div>';
+            content += '</div>';
+        }
+        
+        var remainingAttempts = 3 - visit.reschedule_count;
+        if (remainingAttempts > 0) {
+            content += '<div class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">';
+            content += '<div class="text-xs text-blue-700">';
+            content += '<svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">';
+            content += '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>';
+            content += '</svg>';
+            content += 'Sisa kesempatan reschedule: ' + remainingAttempts + ' kali';
+            content += '</div>';
+            content += '</div>';
+        } else {
+            content += '<div class="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">';
+            content += '<div class="text-xs text-red-700">';
+            content += '<svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">';
+            content += '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>';
+            content += '</svg>';
+            content += 'Batas maksimum reschedule tercapai';
+            content += '</div>';
+            content += '</div>';
+        }
+        
+        content += '</div>';
+        content += '</div>';
         content += '</div>';
     }
+    content += '</div>';
     content += '</div>';
     
     // Author and Auditor Information
     content += '<div class="grid grid-cols-2 gap-4 mb-4">';
     
     // Author Info
-    content += '<div class="bg-gray-50 p-3 rounded-lg border border-gray-200">';
-    content += '<label class="flex items-center text-sm font-medium text-gray-700 mb-2">';
+    content += '<div class="bg-blue-50 p-3 rounded-lg border border-blue-200">';
+    content += '<label class="flex items-center text-sm font-medium text-blue-800 mb-2">';
     content += '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">';
     content += '<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>';
     content += '</svg>Author</label>';
-    if (visit.author && visit.author.name) {
-        content += '<div class="text-sm font-medium text-gray-900 mb-1">' + visit.author.name + '</div>';
-        if (visit.author.email) {
-            content += '<div class="flex items-center text-xs text-gray-600 mb-1">';
-            content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
-            content += '<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>';
-            content += '<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>';
-            content += '</svg>' + visit.author.email + '</div>';
-        }
-        if (visit.author.phone) {
-            content += '<div class="flex items-center text-xs text-gray-600">';
-            content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
-            content += '<path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>';
-            content += '</svg>' + visit.author.phone + '</div>';
-        }
-    } else {
-        content += '<div class="text-sm text-gray-500 italic">Data author tidak tersedia</div>';
+    
+    var authorName = String((visit.author && visit.author.name) ? visit.author.name : (visit.author_name || 'Tidak Diketahui'));
+    var authorEmail = String((visit.author && visit.author.email) ? visit.author.email : '');
+    var authorPhone = String((visit.author && visit.author.phone) ? visit.author.phone : '');
+    
+    authorName = authorName.replace(/[<>\"']/g, '');
+    authorEmail = authorEmail.replace(/[<>\"']/g, '');
+    authorPhone = authorPhone.replace(/[<>\"']/g, '');
+    
+    content += '<div class="text-sm font-medium text-gray-900 mb-1">' + authorName + '</div>';
+    
+    if (authorEmail) {
+        content += '<div class="flex items-center text-xs text-gray-600 mb-1">';
+        content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
+        content += '<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>';
+        content += '<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>';
+        content += '</svg>' + authorEmail + '</div>';
+    }
+    
+    if (authorPhone) {
+        content += '<div class="flex items-center text-xs text-gray-600">';
+        content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
+        content += '<path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>';
+        content += '</svg>' + authorPhone + '</div>';
     }
     content += '</div>';
     
@@ -960,19 +1005,22 @@ function generateDetailContent(visit) {
     content += '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>';
     content += '</svg>Auditor</label>';
     if (visit.auditor && visit.auditor.name) {
-        content += '<div class="text-sm font-medium text-gray-900 mb-1">' + visit.auditor.name + '</div>';
+        var auditorName = String(visit.auditor.name).replace(/[<>\"']/g, '');
+        content += '<div class="text-sm font-medium text-gray-900 mb-1">' + auditorName + '</div>';
         if (visit.auditor.email) {
+            var auditorEmail = String(visit.auditor.email).replace(/[<>\"']/g, '');
             content += '<div class="flex items-center text-xs text-gray-600 mb-1">';
             content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
             content += '<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>';
             content += '<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>';
-            content += '</svg>' + visit.auditor.email + '</div>';
+            content += '</svg>' + auditorEmail + '</div>';
         }
         if (visit.auditor.phone) {
+            var auditorPhone = String(visit.auditor.phone).replace(/[<>\"']/g, '');
             content += '<div class="flex items-center text-xs text-gray-600">';
             content += '<svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">';
             content += '<path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>';
-            content += '</svg>' + visit.auditor.phone + '</div>';
+            content += '</svg>' + auditorPhone + '</div>';
         }
     } else {
         content += '<div class="text-sm text-gray-500 italic">Data auditor tidak tersedia</div>';
@@ -990,34 +1038,19 @@ function generateDetailContent(visit) {
         content += '</svg>Lokasi Kunjungan</label>';
         
         if (visit.location_address) {
+            var locationAddress = String(visit.location_address).replace(/[<>\"']/g, '');
             content += '<div class="text-sm text-gray-900 mb-2">';
             content += '<svg class="w-4 h-4 inline mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20">';
             content += '<path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>';
             content += '</svg>';
-            content += visit.location_address;
+            content += locationAddress;
             content += '</div>';
         }
         
         if (visit.latitude && visit.longitude) {
-            // Peta inline untuk lokasi kunjungan
-            var mainMapId = 'main-map-' + visit.id;
-            content += '<div class="mb-3">';
-            content += '<h4 class="text-sm font-medium text-gray-700 mb-2">Peta Lokasi</h4>';
-            content += '<div id="' + mainMapId + '" class="w-full h-48 rounded-lg border border-gray-300 shadow-sm"></div>';
-            content += '</div>';
-            
             content += '<div class="text-xs text-gray-600 mb-3 p-2 bg-white rounded border">';
             content += '<strong>Koordinat:</strong> ' + parseFloat(visit.latitude).toFixed(6) + ', ' + parseFloat(visit.longitude).toFixed(6);
             content += '</div>';
-            
-            // Simpan data untuk inisialisasi peta
-            window.pendingMaps = window.pendingMaps || [];
-            window.pendingMaps.push({
-                id: mainMapId,
-                lat: parseFloat(visit.latitude),
-                lng: parseFloat(visit.longitude),
-                title: 'Lokasi Kunjungan'
-            });
         }
         content += '</div>';
     }
@@ -1051,7 +1084,7 @@ function generateDetailContent(visit) {
     
     content += '</div>';
     
-    // Report Information (for completed visits) - Same as Auditor
+    // Report Information (for completed visits)
     if (visit.report) {
         content += '<div class="border-t pt-4">';
         content += '<h4 class="text-sm font-semibold text-gray-900 mb-3">Laporan Kunjungan</h4>';
@@ -1070,108 +1103,6 @@ function generateDetailContent(visit) {
             content += '</div>';
         }
         
-        // Selfie Photo and Location
-        if (visit.report.selfie_photo || (visit.report.selfie_latitude && visit.report.selfie_longitude)) {
-            content += '<div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">';
-            content += '<label class="flex items-center text-sm font-medium text-gray-800 mb-3">';
-            content += '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">';
-            content += '<path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>';
-            content += '</svg>Foto Selfie & Lokasi</label>';
-            
-            // Container untuk foto dan peta side by side
-            if (visit.report.selfie_photo && visit.report.selfie_latitude && visit.report.selfie_longitude) {
-                content += '<div class="grid grid-cols-2 gap-4">';
-                
-                // Foto Selfie - Kolom Kiri
-                var selfieUrl = visit.report.selfie_photo;
-                console.log('Original selfie URL:', selfieUrl);
-                
-                content += '<div>';
-                content += '<h4 class="text-sm font-medium text-gray-700 mb-2">Foto Selfie</h4>';
-                content += '<img src="' + selfieUrl + '" alt="Foto Selfie" class="w-full h-40 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-all shadow-sm" onclick="window.open(this.src)" onerror="console.log(\'Image error:\', this.src); this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" title="Klik untuk memperbesar">';
-                content += '<div class="w-full h-40 bg-gray-100 rounded-lg border border-dashed border-gray-300 flex items-center justify-center text-gray-500 text-sm" style="display: none;">Foto tidak tersedia<br><small>' + selfieUrl + '</small></div>';
-                content += '</div>';
-                
-                // Peta - Kolom Kanan
-                var mapId = 'selfie-map-' + visit.id;
-                content += '<div>';
-                content += '<h4 class="text-sm font-medium text-gray-700 mb-2">Lokasi Selfie</h4>';
-                content += '<div id="' + mapId + '" class="w-full h-40 rounded-lg border border-gray-300 shadow-sm"></div>';
-                content += '</div>';
-                
-                content += '</div>';
-                
-                // Koordinat info
-                content += '<div class="mt-3 p-2 bg-gray-100 rounded text-sm text-gray-600">';
-                content += '<strong>Koordinat:</strong> ' + parseFloat(visit.report.selfie_latitude).toFixed(6) + ', ' + parseFloat(visit.report.selfie_longitude).toFixed(6);
-                content += '</div>';
-                
-                // Simpan data untuk inisialisasi peta nanti
-                window.pendingMaps = window.pendingMaps || [];
-                window.pendingMaps.push({
-                    id: mapId,
-                    lat: parseFloat(visit.report.selfie_latitude),
-                    lng: parseFloat(visit.report.selfie_longitude),
-                    title: 'Lokasi Selfie'
-                });
-            } else {
-                // Jika hanya foto atau hanya koordinat
-                if (visit.report.selfie_photo) {
-                    var selfieUrl = visit.report.selfie_photo;
-                    content += '<div class="mb-3">';
-                    content += '<h4 class="text-sm font-medium text-gray-700 mb-2">Foto Selfie</h4>';
-                    content += '<img src="' + selfieUrl + '" alt="Foto Selfie" class="w-40 h-40 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-all shadow-sm" onclick="window.open(this.src)" onerror="console.log(\'Image error:\', this.src); this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" title="Klik untuk memperbesar">';
-                    content += '<div class="w-40 h-40 bg-gray-100 rounded-lg border border-dashed border-gray-300 flex items-center justify-center text-gray-500 text-sm" style="display: none;">Foto tidak tersedia<br><small>' + selfieUrl + '</small></div>';
-                    content += '</div>';
-                }
-                
-                if (visit.report.selfie_latitude && visit.report.selfie_longitude) {
-                    var mapId = 'selfie-map-' + visit.id;
-                    content += '<div class="mb-3">';
-                    content += '<h4 class="text-sm font-medium text-gray-700 mb-2">Lokasi Selfie</h4>';
-                    content += '<div id="' + mapId + '" class="w-full h-40 rounded-lg border border-gray-300 shadow-sm"></div>';
-                    content += '<div class="mt-2 text-sm text-gray-600">';
-                    content += '<strong>Koordinat:</strong> ' + parseFloat(visit.report.selfie_latitude).toFixed(6) + ', ' + parseFloat(visit.report.selfie_longitude).toFixed(6);
-                    content += '</div>';
-                    content += '</div>';
-                    
-                    window.pendingMaps = window.pendingMaps || [];
-                    window.pendingMaps.push({
-                        id: mapId,
-                        lat: parseFloat(visit.report.selfie_latitude),
-                        lng: parseFloat(visit.report.selfie_longitude),
-                        title: 'Lokasi Selfie'
-                    });
-                }
-            }
-            
-            content += '</div>';
-        }
-        
-        // Documentation Photos
-        if (visit.report.photos && visit.report.photos.length > 0) {
-            content += '<div class="mb-4 bg-green-50 p-3 rounded-lg border border-green-200">';
-            content += '<label class="flex items-center text-sm font-medium text-green-800 mb-2">';
-            content += '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">';
-            content += '<path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>';
-            content += '</svg>Foto Dokumentasi (' + visit.report.photos.length + ' foto)</label>';
-            content += '<div class="grid grid-cols-2 gap-3">';
-            
-            for (var i = 0; i < visit.report.photos.length; i++) {
-                var photoUrl = visit.report.photos[i];
-                console.log('Photo ' + (i + 1) + ' URL:', photoUrl);
-                
-                content += '<div class="relative">';
-                content += '<img src="' + photoUrl + '" alt="Dokumentasi ' + (i + 1) + '" class="w-full h-24 object-cover rounded-lg border-2 border-green-300 cursor-pointer hover:opacity-90 transition-all shadow-md" onclick="window.open(this.src)" onerror="console.log(\'Photo error:\', this.src); this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" title="Klik untuk memperbesar">';
-                content += '<div class="w-full h-24 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 text-xs" style="display: none;">Foto ' + (i + 1) + ' tidak tersedia<br><small>' + photoUrl + '</small></div>';
-                content += '<div class="absolute top-1 right-1 bg-green-600 text-white text-xs px-1.5 py-0.5 rounded">' + (i + 1) + '</div>';
-                content += '</div>';
-            }
-            
-            content += '</div>';
-            content += '</div>';
-        }
-        
         content += '</div>';
     }
     
@@ -1180,218 +1111,132 @@ function generateDetailContent(visit) {
     return content;
 }
 
-// Note: toggleDropdown function sudah didefinisikan di atas dengan styling yang baru
-
-function showVisitDetail(visitId) {
-    // Close any open dropdowns first
-    document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
-    
-    // Use the proper detail modal - Same as Auditor
-    showDetailModal(visitId);
-}
+let currentConfirmVisitId = null;
 
 function confirmVisit(visitId) {
-    // Close any open dropdowns first
+    // Close any open dropdowns
     document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
     
-    showConfirmationModal(
-        'Konfirmasi Jadwal Kunjungan',
-        'Apakah Anda yakin ingin mengkonfirmasi jadwal kunjungan ini? Setelah dikonfirmasi, auditor dapat memulai kunjungan.',
-        function() {
-            // Perform the confirmation
-            fetch(`/author/visits/${visitId}/confirm`, {
-                method: 'PATCH',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotificationModal('Berhasil!', 'Jadwal kunjungan telah dikonfirmasi successfully.', 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
-                } else {
-                    showNotificationModal('Error', data.message || 'Gagal mengkonfirmasi jadwal kunjungan.', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotificationModal('Error', 'Terjadi kesalahan saat konfirmasi kunjungan.', 'error');
-            });
-        }
-    );
-}
-
-function showRescheduleModal(visitId) {
-    // Close any open dropdowns first
-    document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
-    
-    // Check if reschedule modal exists
-    const rescheduleModal = document.getElementById('rescheduleModal');
-    if (rescheduleModal) {
-        document.getElementById('rescheduleVisitId').value = visitId;
-        rescheduleModal.classList.remove('hidden');
-    } else {
-        // Show notification if modal doesn't exist
-        showNotificationModal(
-            'Atur Ulang Jadwal', 
-            `Fitur pengaturan ulang jadwal untuk kunjungan ID: ${visitId} akan segera tersedia.`, 
-            'info'
-        );
-    }
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
-
-// Close dropdowns when clicking outside
-document.addEventListener('click', function(event) {
-    if (!event.target.closest('.dropdown-container')) {
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-            menu.classList.add('hidden');
-        });
-    }
-});
-
-function showConfirmModal(visitId) {
-    document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
+    currentConfirmVisitId = visitId;
     const modal = document.getElementById('confirmModal');
-    const button = document.getElementById('confirmButton');
-    
-    button.onclick = function() {
-        confirmVisit(visitId);
-    };
-    
     modal.classList.remove('hidden');
 }
 
 function closeConfirmModal() {
     document.getElementById('confirmModal').classList.add('hidden');
+    currentConfirmVisitId = null;
 }
 
+function submitConfirmVisit() {
+    if (!currentConfirmVisitId) return;
+    
+    const submitBtn = document.getElementById('confirmButton');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Memproses...';
+    
+    fetch(`/author/visits/${currentConfirmVisitId}/confirm`, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeConfirmModal();
+            location.reload();
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Terjadi kesalahan sistem', 'error');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Konfirmasi';
+    });
+}
+
+let currentRescheduleVisitId = null;
+
 function showRescheduleModal(visitId) {
+    // Close any open dropdowns
     document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
+    
+    currentRescheduleVisitId = visitId;
     const modal = document.getElementById('rescheduleModal');
-    const form = document.getElementById('rescheduleForm');
-    const infoDiv = document.getElementById('rescheduleInfo');
+    modal.classList.remove('hidden');
     
     // Set minimum date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    document.getElementById('newDate').min = tomorrow.toISOString().split('T')[0];
-    
-    // Get current visit info for reschedule attempts
-    fetch(`/author/visits/${visitId}/detail`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.data.remaining_reschedule_attempts !== undefined) {
-                infoDiv.innerHTML = `<div class="p-2 bg-gray-50 border border-gray-200 rounded">
-                    <p class="text-gray-700 text-xs">
-                        <strong>Sisa kesempatan:</strong> ${data.data.remaining_reschedule_attempts} kali
-                    </p>
-                </div>`;
-            }
-        });
-    
-    form.onsubmit = function(e) {
-        e.preventDefault();
-        rescheduleVisit(visitId);
-    };
-    
-    modal.classList.remove('hidden');
+    const minDate = tomorrow.toISOString().slice(0, 16);
+    const dateInput = document.getElementById('new_visit_date');
+    if (dateInput) {
+        dateInput.min = minDate;
+    }
 }
 
 function closeRescheduleModal() {
     document.getElementById('rescheduleModal').classList.add('hidden');
-    document.getElementById('rescheduleForm').reset();
+    currentRescheduleVisitId = null;
+    
+    // Reset form
+    const form = document.getElementById('rescheduleForm');
+    if (form) {
+        form.reset();
+    }
 }
 
-function generateModalContent(visit) {
-    const statusConfig = {
-        'belum_dikunjungi': { class: 'bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap animate-pulse', text: 'Menunggu Konfirmasi' },
-        'dalam_perjalanan': { class: 'bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap animate-pulse', text: 'Dalam Perjalanan' },
-        'sedang_dikunjungi': { class: 'bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap animate-pulse', text: 'Sedang Dikunjungi' },
-        'menunggu_acc': { class: 'bg-purple-100 text-purple-800', text: 'Menunggu Konfirmasi Admin' },
-        'selesai': { class: 'bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap animate-pulse', text: 'Selesai' }
+function submitReschedule(event) {
+    event.preventDefault();
+    
+    if (!currentRescheduleVisitId) return;
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Memproses...';
+    
+    const data = {
+        new_visit_date: formData.get('new_visit_date'),
+        reschedule_reason: formData.get('reschedule_reason')
     };
     
-    const status = statusConfig[visit.status] || { class: 'bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap animate-pulse', text: visit.status };
-    
-    return `
-        <div class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">ID Kunjungan</label>
-                        <div class="mt-1 text-sm font-semibold text-gray-900">#${visit.id.toString().padStart(4, '0')}</div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Tanggal & Waktu</label>
-                        <div class="mt-1 text-sm text-gray-900">${visit.visit_date || 'Belum dijadwalkan'}</div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Status</label>
-                        <div class="mt-1">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.class}">
-                                ${status.text}
-                            </span>
-                        </div>
-                    </div>
-                    ${visit.location ? `
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Lokasi</label>
-                            <div class="mt-1 text-sm text-gray-900">${visit.location}</div>
-                        </div>
-                    ` : ''}
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Author</label>
-                        <div class="mt-1 text-sm text-gray-900">${visit.author_name || 'N/A'}</div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Auditor</label>
-                        <div class="mt-1 text-sm text-gray-900">${visit.auditor_name || 'Belum ditentukan'}</div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Dibuat</label>
-                        <div class="mt-1 text-sm text-gray-900">${visit.created_at || 'N/A'}</div>
-                    </div>
-                    ${visit.updated_at && visit.updated_at !== visit.created_at ? `
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Diperbarui</label>
-                            <div class="mt-1 text-sm text-gray-900">${visit.updated_at}</div>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            
-            ${(visit.reschedule_count && visit.reschedule_count > 0) ? `
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <div class="flex items-center">
-                        <svg class="w-4 h-4 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                        </svg>
-                        <span class="text-sm font-medium text-yellow-800">
-                            Kunjungan ini telah diundur ${visit.reschedule_count} kali. 
-                            Sisa kesempatan: ${visit.remaining_reschedule_attempts} kali
-                        </span>
-                    </div>
-                </div>
-            ` : ''}
-            
-            ${visit.notes ? `
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Catatan</label>
-                    <div class="mt-1 text-sm text-gray-900 bg-gray-50 rounded-md p-3 whitespace-pre-wrap">${visit.notes}</div>
-                </div>
-            ` : ''}
-        </div>
-    `;
+    fetch(`/author/visits/${currentRescheduleVisitId}/reschedule`, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeRescheduleModal();
+            location.reload();
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Terjadi kesalahan sistem', 'error');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Atur Ulang';
+    });
 }
 
 function downloadReport(id) {
@@ -1399,116 +1244,84 @@ function downloadReport(id) {
 }
 
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-[99999] p-4 rounded-lg shadow-xl text-white transition-all duration-300 ${
-        type === 'success' ? 'bg-green-500' : 
-        type === 'error' ? 'bg-red-500' : 
-        type === 'warning' ? 'bg-yellow-500' : 'bg-gray-600'
-    }`;
-    notification.innerHTML = `
-        <div class='flex items-center'>
-            <span>${message}</span>
-            <button onclick='this.parentElement.parentElement.remove()' class='ml-3 text-white hover:text-gray-200'>
-                <svg class='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/>
-                </svg>
-            </button>
-        </div>
-    `;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 4000);
+    const modal = document.getElementById('notificationModal');
+    const header = document.getElementById('notificationHeader');
+    const title = document.getElementById('notificationTitleText');
+    const icon = document.getElementById('notificationIcon');
+    const messageEl = document.getElementById('notificationMessage');
+    const okButton = document.getElementById('notificationOkButton');
+    
+    // Set message
+    messageEl.textContent = message;
+    
+    // Configure based on type
+    if (type === 'success') {
+        header.className = 'bg-green-600 text-white px-6 py-4 rounded-t-lg flex items-center justify-between';
+        title.textContent = 'Berhasil';
+        icon.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>';
+        okButton.className = 'px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500';
+    } else if (type === 'error') {
+        header.className = 'bg-red-600 text-white px-6 py-4 rounded-t-lg flex items-center justify-between';
+        title.textContent = 'Kesalahan';
+        icon.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>';
+        okButton.className = 'px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500';
+    } else {
+        header.className = 'bg-blue-600 text-white px-6 py-4 rounded-t-lg flex items-center justify-between';
+        title.textContent = 'Informasi';
+        icon.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>';
+        okButton.className = 'px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500';
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
 }
 
+function closeNotificationModal() {
+    document.getElementById('notificationModal').classList.add('hidden');
+}
 
+function showConfirmationModal(message, type = 'success') {
+    const modal = document.getElementById('confirmationModal');
+    const title = document.getElementById('confirmationTitle');
+    const messageEl = document.getElementById('confirmationMessage');
+    
+    messageEl.textContent = message;
+    modal.classList.remove('hidden');
+}
 
+function closeConfirmationModal() {
+    document.getElementById('confirmationModal').classList.add('hidden');
+}
+
+// Event listeners for form submissions
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Author visits page loaded with auditor-style interface');
+    // Confirm button click handler
+    const confirmButton = document.getElementById('confirmButton');
+    if (confirmButton) {
+        confirmButton.addEventListener('click', submitConfirmVisit);
+    }
     
-    // Close modal when clicking outside
-    document.getElementById('detailModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeDetailModal();
-        }
-    });
-    
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && !document.getElementById('detailModal').classList.contains('hidden')) {
-            closeDetailModal();
-        }
-    });
-});
-
-// Function to initialize Leaflet maps
-function initializePendingMaps() {
-    if (!window.pendingMaps) return;
-    
-    window.pendingMaps.forEach(function(mapConfig) {
-        var mapElement = document.getElementById(mapConfig.id);
-        if (mapElement && !mapElement._leaflet_id) { // Check if map not already initialized
-            try {
-                // Initialize map with neutral colors (no blue)
-                var map = L.map(mapConfig.id, {
-                    zoomControl: true,
-                    attributionControl: false
-                }).setView([mapConfig.lat, mapConfig.lng], 15);
-                
-                // Use OpenStreetMap tiles with neutral colors
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19
-                }).addTo(map);
-                
-                // Add marker with custom icon (no blue)
-                var redIcon = L.icon({
-                    iconUrl: 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#dc2626" width="32" height="32"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>'),
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 32],
-                    popupAnchor: [0, -32]
-                });
-                
-                L.marker([mapConfig.lat, mapConfig.lng], {icon: redIcon})
-                    .addTo(map)
-                    .bindPopup('<b>' + mapConfig.title + '</b><br>Lat: ' + mapConfig.lat.toFixed(6) + '<br>Lng: ' + mapConfig.lng.toFixed(6))
-                    .openPopup();
-                
-                // Fit map to marker with some padding
-                setTimeout(function() {
-                    map.invalidateSize();
-                }, 50);
-                
-            } catch (error) {
-                console.error('Error initializing map:', error);
-                mapElement.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500 text-sm">Gagal memuat peta</div>';
-            }
-        }
-    });
-    
-    // Clear pending maps after initialization
-    window.pendingMaps = [];
-}
-
-// Close dropdowns when clicking outside - Same as Auditor
-document.addEventListener('click', function(event) {
-    const isDropdownButton = event.target.closest('[onclick^="toggleDropdown"]');
-    const isDropdownContent = event.target.closest('[id^="dropdown-"]');
-    
-    if (!isDropdownButton && !isDropdownContent) {
-        document.querySelectorAll('[id^="dropdown-"]').forEach(dropdown => {
-            dropdown.classList.add('hidden');
-        });
+    // Reschedule form submission
+    const rescheduleForm = document.getElementById('rescheduleForm');
+    if (rescheduleForm) {
+        rescheduleForm.addEventListener('submit', submitReschedule);
     }
 });
-</script>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-<!-- Feather Icons -->
-<script src="https://unpkg.com/feather-icons"></script>
-<script>
+// Initialize visit system when page loads
+document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons
-    document.addEventListener('DOMContentLoaded', function() {
+    if (typeof feather !== 'undefined') {
         feather.replace();
-    });
+    }
+    
+    // Sort table by VST ID on page load with longer delay to ensure content is loaded
+    console.log('Author page loaded, scheduling VST ID sorting...');
+    setTimeout(function() {
+        sortTableByVSTId();
+    }, 1000);
+    
+    console.log('Author visit management system loaded successfully');
+});
 </script>
 @endpush

@@ -211,7 +211,7 @@
                     <td class="px-4 py-3">
                       <div class="flex justify-center">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-purple-50 text-purple-700 border border-purple-100">
-                          CMT{{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}
+                          CMT{{ str_pad($loop->iteration, 4, '0', STR_PAD_LEFT) }}
                         </span>
                       </div>
                     </td>

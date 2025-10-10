@@ -42,7 +42,11 @@ class AuthorVisitController extends Controller
         \Log::info('Visits by author name "' . $author->name . '": ' . $visitsByName);
         
         $query = Visit::query()
-                      ->with(['admin', 'auditor', 'author'])
+                      ->with([
+                          'admin:id,name,email', 
+                          'auditor:id,name,email,phone', 
+                          'author:id,name,email,phone'
+                      ])
                       ->where(function($q) use ($author) {
                           $q->where('author_id', $author->id)
                             ->orWhere('author_name', $author->name);
@@ -150,8 +154,12 @@ class AuthorVisitController extends Controller
                 ], 403);
             }
 
-            // Load relationships
-            $visit->load(['admin', 'auditor', 'author']);
+            // Load relationships with specific fields
+            $visit->load([
+                'admin:id,name,email', 
+                'auditor:id,name,email,phone', 
+                'author:id,name,email,phone'
+            ]);
 
             $visitData = [
                 'id' => $visit->id,
@@ -160,15 +168,19 @@ class AuthorVisitController extends Controller
                 'visit_time' => $visit->visit_time,
                 'duration' => $visit->duration,
                 'author' => [
-                    'name' => $visit->author->name ?? $visit->author_name,
-                    'email' => $visit->author->email ?? null,
-                    'phone' => $visit->author->phone ?? null,
+                    'name' => $visit->author?->name ?? $visit->author_name ?? 'Tidak Diketahui',
+                    'email' => $visit->author?->email ?? '',
+                    'phone' => $visit->author?->phone ?? '',
                 ],
                 'auditor' => $visit->auditor ? [
                     'name' => $visit->auditor->name,
                     'email' => $visit->auditor->email,
                     'phone' => $visit->auditor->phone,
-                ] : null,
+                ] : [
+                    'name' => $visit->auditor_name ?? 'Tidak Diketahui',
+                    'email' => '',
+                    'phone' => '',
+                ],
                 'location_address' => $visit->location_address,
                 'latitude' => $visit->latitude,
                 'longitude' => $visit->longitude,
@@ -234,6 +246,21 @@ class AuthorVisitController extends Controller
                     'visit_end_time' => $visit->completed_at,
                     'created_at' => $visit->updated_at
                 ];
+            }
+
+            // Add reschedule information if available
+            if ($visit->reschedule_count > 0) {
+                $visitData['reschedule_reason'] = $visit->reschedule_reason;
+                $visitData['rescheduled_at'] = $visit->rescheduled_at ? $visit->rescheduled_at->format('Y-m-d H:i:s') : null;
+                
+                // Get rescheduled_by user name if available
+                if ($visit->rescheduled_by) {
+                    // Try to get user name from users table
+                    $rescheduledBy = \App\Models\User::find($visit->rescheduled_by);
+                    $visitData['rescheduled_by_name'] = $rescheduledBy ? $rescheduledBy->name : 'User ID: ' . $visit->rescheduled_by;
+                } else {
+                    $visitData['rescheduled_by_name'] = $visit->author?->name ?? $visit->author_name ?? 'Author';
+                }
             }
 
             return response()->json([
@@ -359,13 +386,23 @@ class AuthorVisitController extends Controller
             ]);
 
             $newRescheduleCount = $currentRescheduleCount + 1;
+            
+            // Handle both string and numeric user IDs for rescheduled_by
+            $currentUserId = $author->id;
+            $rescheduledByValue = $currentUserId;
+            if (is_string($currentUserId)) {
+                // Try to extract numeric part from string ID like USER001
+                preg_match('/\d+/', $currentUserId, $matches);
+                $rescheduledByValue = !empty($matches) ? (int)$matches[0] : 1; // Default to 1 if no number found
+            }
+            
             $visit->update([
                 'status' => 'belum_dikunjungi', // Reset to pending
                 'visit_date' => $request->visit_date,
                 'reschedule_reason' => $request->reschedule_reason,
                 'reschedule_count' => $newRescheduleCount,
                 'rescheduled_at' => now(),
-                'rescheduled_by' => $author->id
+                'rescheduled_by' => $rescheduledByValue
             ]);
 
             $remainingAttempts = 3 - $newRescheduleCount;

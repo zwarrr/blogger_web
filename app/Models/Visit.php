@@ -95,20 +95,20 @@ class Visit extends Model
 
     public static function generateVisitId()
     {
-        // Get the last visit ID number
+        // Get the last visit ID number with VST prefix
         $lastVisit = self::whereNotNull('visit_id')
-                        ->where('visit_id', 'LIKE', 'VIST%')
+                        ->where('visit_id', 'LIKE', 'VST%')
                         ->orderBy('visit_id', 'desc')
                         ->first();
         
-        if ($lastVisit && preg_match('/VIST(\d+)/', $lastVisit->visit_id, $matches)) {
+        if ($lastVisit && preg_match('/VST(\d+)/', $lastVisit->visit_id, $matches)) {
             $lastNumber = (int) $matches[1];
             $nextNumber = $lastNumber + 1;
         } else {
-            $nextNumber = 1;
+            $nextNumber = 1; // Start from 1 (VST0001)
         }
         
-        return 'VIST' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        return 'VST' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
     public function getStatusLabelAttribute()

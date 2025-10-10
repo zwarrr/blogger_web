@@ -161,21 +161,24 @@
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                             
                             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                                <!-- Status Filter -->
+                                <!-- Auditor Filter -->
                                 <form method="GET" class="flex items-center gap-3">
                                     <label class="text-sm font-semibold text-gray-700 whitespace-nowrap flex items-center gap-2">
-                                        <i data-feather="filter" class="w-4 h-4 text-orange-500"></i>
-                                        Status:
+                                        <i data-feather="user-check" class="w-4 h-4 text-blue-500"></i>
+                                        Auditor:
                                     </label>
                                     <div class="relative">
-                                        <select name="status" onchange="this.form.submit()" 
-                                                class="appearance-none border-2 border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-sm bg-white text-gray-700 hover:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 min-w-[170px] font-medium shadow-sm">
-                                            <option value="">Tampilkan Semua</option>
-                                            <option value="belum_dikunjungi" {{ request('status') === 'belum_dikunjungi' ? 'selected' : '' }}>Belum Dikunjungi</option>
-                                            <option value="dikonfirmasi" {{ request('status') === 'dikonfirmasi' ? 'selected' : '' }}>Dikonfirmasi</option>
-                                            <option value="dalam_perjalanan" {{ request('status') === 'dalam_perjalanan' ? 'selected' : '' }}>Dalam Perjalanan</option>
-                                            <option value="selesai" {{ request('status') === 'selesai' ? 'selected' : '' }}>Selesai</option>
-                                            <option value="menunggu_acc" {{ request('status') === 'menunggu_acc' ? 'selected' : '' }}>Menunggu ACC</option>
+                                        <select name="auditor" id="auditorFilter" 
+                                                class="appearance-none border-2 border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-sm bg-white text-gray-700 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 min-w-[170px] font-medium shadow-sm">
+                                            <option value="">Semua Auditor</option>
+                                            @php
+                                                $auditors = \App\Models\Auditor::select('id', 'name')->orderBy('name')->get();
+                                            @endphp
+                                            @foreach($auditors as $auditor)
+                                                <option value="{{ $auditor->id }}" {{ request('auditor') == $auditor->id ? 'selected' : '' }}>
+                                                    {{ $auditor->name }}
+                                                </option>
+                                            @endforeach
                                         </select>
                                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                             <i data-feather="chevron-down" class="h-4 w-4 text-gray-400"></i>
@@ -183,67 +186,14 @@
                                     </div>
                                 </form>
                                 
-                                <!-- Search Box -->
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <i data-feather="search" class="h-4 w-4 text-orange-500"></i>
-                                    </div>
-                                    <input type="text" 
-                                           id="searchInput" 
-                                           placeholder="Cari kunjungan, author, auditor..." 
-                                           class="block w-full pl-12 pr-4 py-2.5 border-2 border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 hover:border-orange-300 transition-all duration-200 text-sm min-w-[280px] font-medium shadow-sm">
-                                </div>
-                                
                                 <!-- Status Info -->
-                                <div class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-                                    <i data-feather="map-pin" class="w-4 h-4 text-orange-600"></i>
+                                <div class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                                    <i data-feather="map-pin" class="w-4 h-4 text-blue-600"></i>
                                     <div class="text-sm">
                                         <span class="font-medium text-gray-700">Menampilkan:</span> 
-                                        <span class="text-orange-600 font-bold">{{ count($mapData) }}</span>
+                                        <span class="text-blue-600 font-bold">{{ count($mapData) }}</span>
                                         <span class="text-gray-500">lokasi</span>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Legend Section -->
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div class="flex items-center gap-3">
-                                <div class="h-9 w-9 rounded-lg bg-orange-100 flex items-center justify-center">
-                                    <i data-feather="layers" class="w-4 h-4 text-orange-600"></i>
-                                </div>
-                                <div>
-                                    <h4 class="text-sm font-semibold text-gray-900">Legenda Status</h4>
-                                    <p class="text-xs text-gray-600">Status kunjungan berdasarkan data terkini</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Legend Items -->
-                            <div class="grid grid-cols-2 lg:flex lg:items-center gap-2">
-                                <div class="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-yellow-200 shadow-sm">
-                                    <div class="w-3 h-3 bg-yellow-500 rounded-full border border-yellow-600"></div>
-                                    <span class="text-xs font-medium text-gray-700">Belum Dikunjungi</span>
-                                    <span class="text-xs bg-yellow-500 text-white px-1.5 py-0.5 rounded-full font-semibold">{{ $stats['belum_dikunjungi'] ?? 0 }}</span>
-                                </div>
-                                
-                                <div class="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-blue-200 shadow-sm">
-                                    <div class="w-3 h-3 bg-blue-500 rounded-full border border-blue-600"></div>
-                                    <span class="text-xs font-medium text-gray-700">Dikonfirmasi</span>
-                                    <span class="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-semibold">{{ $stats['dikonfirmasi'] ?? 0 }}</span>
-                                </div>
-                                
-                                <div class="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-purple-200 shadow-sm">
-                                    <div class="w-3 h-3 bg-purple-500 rounded-full border border-purple-600"></div>
-                                    <span class="text-xs font-medium text-gray-700">Dalam Perjalanan</span>
-                                    <span class="text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded-full font-semibold">{{ $stats['dalam_perjalanan'] ?? 0 }}</span>
-                                </div>
-                                
-                                <div class="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-green-200 shadow-sm">
-                                    <div class="w-3 h-3 bg-green-500 rounded-full border border-green-600"></div>
-                                    <span class="text-xs font-medium text-gray-700">Selesai</span>
-                                    <span class="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded-full font-semibold">{{ $stats['selesai'] ?? 0 }}</span>
                                 </div>
                             </div>
                         </div>
@@ -399,39 +349,52 @@
             'menunggu_acc': 'Menunggu ACC'
         };
 
-        // Function to create custom marker icon
-        function createCustomIcon(color, status) {
-            const iconMap = {
-                'belum_dikunjungi': '○',
-                'dikonfirmasi': '✓',
-                'dalam_perjalanan': '�',
-                'selesai': '✓',
-                'default': '●'
-            };
-            
-            const icon = iconMap[status] || iconMap['default'];
+        // Function to get auditor initials
+        function getAuditorInitials(auditorName) {
+            if (!auditorName) return 'A';
+            return auditorName.split(' ')
+                .map(name => name.charAt(0))
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+        }
+
+        // Function to create numbered marker icon with auditor initials
+        function createNumberedIcon(color, status, visitNumber, auditorName) {
+            const initials = getAuditorInitials(auditorName);
             
             return L.divIcon({
-                className: 'custom-div-icon',
+                className: 'custom-numbered-icon',
                 html: `
                     <div class="relative">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg border-2 border-white" 
+                        <!-- Main marker circle with initials -->
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg border-3 border-white relative" 
                              style="background-color: ${color};">
-                            ${icon}
+                            ${initials}
                         </div>
-                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-transparent" 
+                        <!-- Number badge -->
+                        <div class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white shadow-md">
+                            ${visitNumber}
+                        </div>
+                        <!-- Pointer tail -->
+                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[10px] border-transparent" 
                              style="border-top-color: ${color};"></div>
                     </div>
                 `,
-                iconSize: [32, 40],
-                iconAnchor: [16, 40],
-                popupAnchor: [0, -40]
+                iconSize: [40, 50],
+                iconAnchor: [20, 50],
+                popupAnchor: [0, -50]
             });
         }
 
         const markers = [];
+        const routeLines = [];
+        let visitCounter = 1;
         
-        visitsData.forEach(visit => {
+        // Sort visits by visit_date for proper route sequencing
+        const sortedVisits = visitsData.slice().sort((a, b) => new Date(a.visit_date) - new Date(b.visit_date));
+        
+        sortedVisits.forEach((visit, index) => {
             // Determine color based on status - matching legend colors
             let color;
             switch(visit.status) {
@@ -451,11 +414,13 @@
                     color = '#f97316'; // Orange-500 - default "Di Peta"
             }
             
-            // Create custom marker with icon and matching legend colors
-            const customIcon = createCustomIcon(color, visit.status);
+            // Create numbered marker with auditor initials
+            const numberedIcon = createNumberedIcon(color, visit.status, visitCounter, visit.auditor_name);
             const marker = L.marker([visit.latitude, visit.longitude], {
-                icon: customIcon
+                icon: numberedIcon
             }).addTo(map);
+            
+            visitCounter++;
             
             // Professional popup with complete information
             const popupContent = `
@@ -488,14 +453,12 @@
                             </div>
                             
                             <div class="flex items-center gap-2">
-                                <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
+                                <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center text-xs font-bold text-orange-600">
+                                    ${getAuditorInitials(visit.auditor_name)}
                                 </div>
                                 <div>
                                     <p class="font-medium text-gray-700">${visit.auditor_name}</p>
-                                    <p class="text-xs text-gray-500">Auditor</p>
+                                    <p class="text-xs text-gray-500">Auditor (#${index + 1})</p>
                                 </div>
                             </div>
                         </div>
@@ -544,6 +507,39 @@
             });
             
             markers.push(marker);
+            
+            // Create route connections (connect to previous marker)
+            if (index > 0) {
+                const prevVisit = sortedVisits[index - 1];
+                const routeLine = L.polyline([
+                    [prevVisit.latitude, prevVisit.longitude],
+                    [visit.latitude, visit.longitude]
+                ], {
+                    color: '#6366f1', // Indigo color for routes
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '8, 8', // Dashed line
+                    className: 'route-line'
+                }).addTo(map);
+                
+                // Add route popup with travel info
+                const routePopup = `
+                    <div class="text-center p-2">
+                        <div class="font-semibold text-sm text-indigo-700 mb-1">Rute Kunjungan</div>
+                        <div class="text-xs text-gray-600">
+                            Dari: <span class="font-medium">${prevVisit.visit_id}</span><br>
+                            Ke: <span class="font-medium">${visit.visit_id}</span>
+                        </div>
+                        <div class="text-xs text-indigo-600 mt-1 font-medium">Urutan ${index} → ${index + 1}</div>
+                    </div>
+                `;
+                
+                routeLine.bindPopup(routePopup, {
+                    className: 'route-popup'
+                });
+                
+                routeLines.push(routeLine);
+            }
         });
 
         // Hide loading and fit map to markers
@@ -599,59 +595,87 @@
             position: 'bottomright'
         }).addTo(map);
 
-        // Search functionality using database data
-        const searchInput = document.getElementById('searchInput');
+        // Filter functionality for auditor only
+        const auditorFilter = document.getElementById('auditorFilter');
         let originalMarkers = [...markers]; // Store original markers from database
+        let originalRoutes = [...routeLines]; // Store original route lines
         
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
+        // Combined filter function
+        function applyFilters() {
+            const selectedAuditor = auditorFilter ? auditorFilter.value : '';
             
-            // Clear all markers
-            markers.forEach(marker => {
-                map.removeLayer(marker);
-            });
-            markers.length = 0; // Clear array
+            // Clear all markers and routes
+            markers.forEach(marker => map.removeLayer(marker));
+            routeLines.forEach(route => map.removeLayer(route));
+            markers.length = 0;
+            routeLines.length = 0;
             
-            if (searchTerm === '') {
-                // Show all markers from database
-                originalMarkers.forEach(marker => {
-                    map.addLayer(marker);
-                    markers.push(marker);
-                });
-                updateDisplayCount(originalMarkers.length);
-            } else {
-                // Filter markers based on database data
-                visitsData.forEach((visit, index) => {
-                    const searchableText = [
-                        visit.visit_id,
-                        visit.author_name,
-                        visit.auditor_name,
-                        visit.location_address,
-                        visit.status_label,
-                        visit.notes
-                    ].join(' ').toLowerCase();
-                    
-                    if (searchableText.includes(searchTerm)) {
-                        const marker = originalMarkers[index];
-                        if (marker) {
-                            map.addLayer(marker);
-                            markers.push(marker);
+            let filteredVisits = sortedVisits.slice();
+            
+            // Apply auditor filter
+            if (selectedAuditor) {
+                filteredVisits = filteredVisits.filter(visit => 
+                    visit.auditor_id && visit.auditor_id.toString() === selectedAuditor
+                );
+            }
+            
+            // Recreate markers and routes for filtered visits
+            let visitCounter = 1;
+            filteredVisits.forEach((visit, index) => {
+                const originalIndex = sortedVisits.findIndex(v => v.id === visit.id);
+                if (originalIndex !== -1) {
+                    const marker = originalMarkers[originalIndex];
+                    if (marker) {
+                        map.addLayer(marker);
+                        markers.push(marker);
+                        
+                        // Recreate routes for consecutive visits
+                        if (index > 0) {
+                            const prevVisit = filteredVisits[index - 1];
+                            const routeLine = L.polyline([
+                                [prevVisit.latitude, prevVisit.longitude],
+                                [visit.latitude, visit.longitude]
+                            ], {
+                                color: '#6366f1',
+                                weight: 3,
+                                opacity: 0.7,
+                                dashArray: '8, 8',
+                                className: 'route-line'
+                            }).addTo(map);
+                            
+                            const routePopup = `
+                                <div class="text-center p-2">
+                                    <div class="font-semibold text-sm text-indigo-700 mb-1">Rute Kunjungan</div>
+                                    <div class="text-xs text-gray-600">
+                                        Dari: <span class="font-medium">${prevVisit.visit_id}</span><br>
+                                        Ke: <span class="font-medium">${visit.visit_id}</span>
+                                    </div>
+                                    <div class="text-xs text-indigo-600 mt-1 font-medium">Urutan ${index} → ${index + 1}</div>
+                                </div>
+                            `;
+                            
+                            routeLine.bindPopup(routePopup, { className: 'route-popup' });
+                            routeLines.push(routeLine);
                         }
                     }
-                });
-                updateDisplayCount(markers.length);
-            }
+                }
+            });
+            
+            updateDisplayCount(filteredVisits.length);
             
             // Fit map to filtered markers
             if (markers.length > 0) {
                 const group = new L.featureGroup(markers);
                 map.fitBounds(group.getBounds().pad(0.1));
             }
-        });
+        }
+        
+        // Event listeners for auditor filter
+        if (auditorFilter) auditorFilter.addEventListener('change', applyFilters);
 
         // Update display count
         function updateDisplayCount(count) {
-            const countElement = document.querySelector('.text-orange-600.font-semibold');
+            const countElement = document.querySelector('.text-blue-600.font-bold');
             if (countElement) {
                 countElement.textContent = count;
             }
@@ -1177,6 +1201,45 @@
         #visitModal .grid-cols-1.lg\\:grid-cols-2 {
             grid-template-columns: 1fr;
         }
+    }
+    
+    /* Custom numbered icon styling */
+    .custom-numbered-icon {
+        background: transparent !important;
+        border: none !important;
+    }
+    
+    .custom-numbered-icon > div {
+        transition: all 0.3s ease-in-out;
+        cursor: pointer;
+    }
+    
+    .custom-numbered-icon:hover > div > div:first-child {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 0 0 4px rgba(255,255,255,0.9) !important;
+    }
+    
+    /* Route line styling */
+    .route-line {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .route-line:hover {
+        opacity: 1 !important;
+        weight: 5;
+    }
+    
+    /* Route popup styling */
+    .route-popup .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border: 2px solid #6366f1;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+    
+    .route-popup .leaflet-popup-tip {
+        background: #f8fafc;
+        border: 1px solid #6366f1;
     }
     
     /* Custom div icon styling */

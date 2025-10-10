@@ -426,6 +426,22 @@ class AdminVisitController extends Controller
             'created_at' => $visit->updated_at
         ];
 
+        // Add reschedule information if available
+        if ($visit->reschedule_count > 0) {
+            $data['reschedule_count'] = $visit->reschedule_count;
+            $data['reschedule_reason'] = $visit->reschedule_reason;
+            $data['rescheduled_at'] = $visit->rescheduled_at;
+            
+            // Get rescheduled_by user name if available
+            if ($visit->rescheduled_by) {
+                // Try to get user name from users table
+                $rescheduledBy = \App\Models\User::find($visit->rescheduled_by);
+                $data['rescheduled_by_name'] = $rescheduledBy ? $rescheduledBy->name : 'User ID: ' . $visit->rescheduled_by;
+            } else {
+                $data['rescheduled_by_name'] = $visit->author?->name ?? $visit->author_name ?? 'Author';
+            }
+        }
+
         return response()->json($data);
     }
 
@@ -434,8 +450,8 @@ class AdminVisitController extends Controller
      */
     public function edit(Visit $visit)
     {
-        // Load visit with the same relationships as in index view
-        $visit->load(['author', 'auditor', 'report', 'report.photos']);
+        // Load visit with available relationships
+        $visit->load(['author', 'auditor']);
         
         // Get authors and auditors for dropdowns
         $authors = User::where('role', 'author')->get();
@@ -641,18 +657,12 @@ class AdminVisitController extends Controller
      */
     public function approveReport(Request $request, Visit $visit)
     {
-        if (!$visit->visitReport) {
-            return back()->with('error', 'Laporan tidak ditemukan.');
-        }
-
-        $visit->visitReport->update([
-            'status' => 'approved',
-            'admin_notes' => $request->admin_notes ?? null,
-            'reviewed_by' => Auth::id(),
-            'reviewed_at' => now()
+        // Update visit status directly since visitReport table doesn't exist
+        $visit->update([
+            'status' => 'completed',
+            'auditor_notes' => $request->admin_notes ?? $visit->auditor_notes,
+            'completed_at' => now()
         ]);
-
-        $visit->update(['status' => 'completed']);
 
         return back()->with('success', 'Laporan berhasil disetujui.');
     }
@@ -666,15 +676,11 @@ class AdminVisitController extends Controller
             'revision_notes' => 'required|string|max:1000'
         ]);
 
-        if (!$visit->visitReport) {
-            return back()->with('error', 'Laporan tidak ditemukan.');
-        }
-
-        $visit->visitReport->update([
+        // Update visit status directly since visitReport table doesn't exist
+        $visit->update([
             'status' => 'revision_required',
-            'admin_notes' => $request->revision_notes,
-            'reviewed_by' => Auth::id(),
-            'reviewed_at' => now()
+            'auditor_notes' => $request->revision_notes,
+            'notes' => $visit->notes . "\n\nRevisi: " . $request->revision_notes
         ]);
 
         return back()->with('success', 'Laporan dikembalikan untuk revisi.');
