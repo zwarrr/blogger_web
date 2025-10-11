@@ -208,60 +208,72 @@
         <!-- Total Kunjungan -->
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
-                        <i data-feather="map-pin" class="w-5 h-5"></i>
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="12" r="8"></circle>
+                            <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"></circle>
+                        </svg>
                     </div>
                     <h3 class="text-sm font-medium text-gray-500">Total Kunjungan</h3>
                 </div>
                 <span class="text-xs text-green-600">&nbsp;</span>
             </div>
-            <p class="text-2xl font-bold mt-2">{{ number_format($totalVisits ?? 0) }}</p>
+            <p class="text-2xl font-bold mt-3">{{ number_format($totalVisits ?? 0) }}</p>
             <p class="text-xs text-gray-500 mt-1">Seluruh periode</p>
         </div>
 
         <!-- Belum Dikunjungi -->
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
-                        <i data-feather="clock" class="w-5 h-5"></i>
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="12" r="8"></circle>
+                            <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"></circle>
+                        </svg>
                     </div>
                     <h3 class="text-sm font-medium text-gray-500">Belum Dikunjungi</h3>
                 </div>
                 <span class="text-xs text-green-600">&nbsp;</span>
             </div>
-            <p class="text-2xl font-bold mt-2">{{ number_format($belumDikunjungi ?? 0) }}</p>
+            <p class="text-2xl font-bold mt-3">{{ number_format($belumDikunjungi ?? 0) }}</p>
             <p class="text-xs text-gray-500 mt-1">{{ ($totalVisits ?? 0) > 0 ? round((($belumDikunjungi ?? 0) / ($totalVisits ?? 1)) * 100, 1) : 0 }}% dari total</p>
         </div>
 
         <!-- Dalam Perjalanan -->
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
-                        <i data-feather="activity" class="w-5 h-5"></i>
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="12" r="8"></circle>
+                            <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"></circle>
+                        </svg>
                     </div>
                     <h3 class="text-sm font-medium text-gray-500">Dalam Perjalanan</h3>
                 </div>
                 <span class="text-xs text-green-600">&nbsp;</span>
             </div>
-            <p class="text-2xl font-bold mt-2">{{ number_format($dalamPerjalanan ?? 0) }}</p>
+            <p class="text-2xl font-bold mt-3">{{ number_format($dalamPerjalanan ?? 0) }}</p>
             <p class="text-xs text-gray-500 mt-1">{{ ($totalVisits ?? 0) > 0 ? round((($dalamPerjalanan ?? 0) / ($totalVisits ?? 1)) * 100, 1) : 0 }}% dari total</p>
         </div>
 
         <!-- Selesai -->
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="h-9 w-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
-                        <i data-feather="check-circle" class="w-5 h-5"></i>
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="12" r="8"></circle>
+                            <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"></circle>
+                        </svg>
                     </div>
                     <h3 class="text-sm font-medium text-gray-500">Selesai</h3>
                 </div>
                 <span class="text-xs text-green-600">&nbsp;</span>
             </div>
-            <p class="text-2xl font-bold mt-2">{{ number_format($selesai ?? 0) }}</p>
+            <p class="text-2xl font-bold mt-3">{{ number_format($selesai ?? 0) }}</p>
             <p class="text-xs text-gray-500 mt-1">{{ ($totalVisits ?? 0) > 0 ? round((($selesai ?? 0) / ($totalVisits ?? 1)) * 100, 1) : 0 }}% dari total</p>
         </div>
     </div>
@@ -348,9 +360,9 @@
                     </tr>
                 </thead>
                 <!-- Table Body -->
-                <tbody id="visits-table-body">
+                <tbody id="visits-table-body" data-page-offset="{{ ($visits->currentPage()-1)*$visits->perPage() }}">
                     @forelse($visits as $index => $visit)
-                        <tr class="border-t hover:bg-gray-50 transition-colors">
+                        <tr class="border-t hover:bg-gray-50 transition-colors" data-visit-id="{{ $visit->id }}">
                             <!-- Row Number -->
                             <td class="px-4 py-3 text-center">
                                 <div class="text-xs text-gray-600 font-medium">
@@ -362,7 +374,7 @@
                             <td class="px-4 py-3">
                                 <div class="flex justify-center">
                                     <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">
-                                        #{{ str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}
+                                        {{ 'VST' . str_pad(($visits->currentPage()-1)*$visits->perPage()+$index+1, 4, '0', STR_PAD_LEFT) }}
                                     </span>
                                 </div>
                             </td>
@@ -481,8 +493,12 @@
                     @empty
                         <tr>
                             <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                                <div class="flex flex-col items-center">
-                                    <i data-feather="inbox" class="w-12 h-12 text-gray-400 mb-4"></i>
+                                <div class="flex flex-col items-center justify-center">
+                                    <div class="flex items-center justify-center mb-4">
+                                        <svg class="w-12 h-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                            <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"></polyline>
+                                        </svg>
+                                    </div>
                                     <p class="text-lg font-medium">Tidak ada data kunjungan</p>
                                     <p class="text-sm">Belum ada kunjungan yang ditugaskan kepada Anda.</p>
                                 </div>
@@ -703,47 +719,19 @@
 <script>
 // Sort table by VST ID - Enhanced to regenerate sequential VST IDs for role-specific data
 function sortTableByVSTId() {
-    console.log('Starting VST ID sorting for Author panel...');
     var tbody = document.getElementById('visits-table-body');
-    if (!tbody) {
-        console.log('Table body not found');
-        return;
-    }
-    
-    var rows = Array.from(tbody.querySelectorAll('tr')).filter(row => {
-        // Only process data rows (skip empty or header rows)
-        var vstIdSpan = row.querySelector('td:nth-child(2) span');
-        return vstIdSpan && vstIdSpan.textContent.trim().startsWith('VST');
-    });
-    
-    console.log('Found ' + rows.length + ' VST rows to sort');
-    if (rows.length === 0) return;
-    
-    // Clear tbody and append rows with sequential VST IDs starting from VST0001
-    tbody.innerHTML = '';
+    if (!tbody) return;
+
+    var pageOffset = parseInt(tbody.getAttribute('data-page-offset') || 0, 10);
+    var rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.querySelector('td:first-child'));
+
     rows.forEach(function(row, index) {
-        // Update row number in first column to be sequential (1, 2, 3...)
         var rowNumberCell = row.querySelector('td:first-child div');
         if (rowNumberCell) {
-            rowNumberCell.textContent = (index + 1);
+            rowNumberCell.textContent = (pageOffset + index + 1);
         }
-        
-        // Update VST ID to be sequential starting from VST0001
-        var vstIdSpan = row.querySelector('td:nth-child(2) span');
-        if (vstIdSpan) {
-            // Store original VST ID as data attribute for backend operations before changing
-            if (!vstIdSpan.getAttribute('data-original-vst')) {
-                vstIdSpan.setAttribute('data-original-vst', vstIdSpan.textContent.trim());
-            }
-            
-            var newVstId = 'VST' + String(index + 1).padStart(4, '0');
-            vstIdSpan.textContent = newVstId;
-        }
-        
-        tbody.appendChild(row);
+        // Keep server-provided visit IDs untouched in the second column
     });
-    
-    console.log('VST ID sorting completed for Author panel with sequential VST IDs');
 }
 
 // Dropdown functionality - Fixed positioning
@@ -814,6 +802,15 @@ function showDetailModal(id) {
     // Close any open dropdowns
     document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
     
+    // Find the display index for VST ID generation
+    const row = document.querySelector(`tr[data-visit-id="${id}"]`);
+    if (row) {
+        const rowNumber = row.querySelector('td:first-child div');
+        if (rowNumber) {
+            window.currentVisitDisplayIndex = parseInt(rowNumber.textContent);
+        }
+    }
+    
     // Show loading in modal
     const modal = document.getElementById('detailModal');
     const modalBody = document.getElementById('detailModalBody');
@@ -862,7 +859,7 @@ function generateDetailContent(visit) {
     var content = '<div class="space-y-6 max-h-96 overflow-y-auto">';
     
     // Basic Information - sanitize data
-    var visitId = String(visit.visit_id || 'VST' + String(visit.id || 0).padStart(4, '0'));
+    var visitId = 'VST' + String((window.currentVisitDisplayIndex || visit.id || 0)).padStart(4, '0');
     var statusText = String(status.text || 'Unknown').replace(/[<>\"']/g, '');
     
     content += '<div class="grid grid-cols-2 gap-4">';
@@ -1310,18 +1307,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize visit system when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Feather icons
-    if (typeof feather !== 'undefined') {
-        feather.replace();
+    // Debounced Feather icon refresher - use this instead of calling feather.replace() directly
+    var __featherDebounceTimer = null;
+    function refreshFeatherIcons() {
+        if (typeof feather === 'undefined') return;
+        if (__featherDebounceTimer) clearTimeout(__featherDebounceTimer);
+        __featherDebounceTimer = setTimeout(function() {
+            try {
+                feather.replace();
+            } catch (err) {
+                console.error('feather.replace() failed', err);
+            }
+        }, 40);
     }
-    
+
+    // Initialize Feather icons for the initial static DOM
+    refreshFeatherIcons();
+
     // Sort table by VST ID on page load with longer delay to ensure content is loaded
     console.log('Author page loaded, scheduling VST ID sorting...');
     setTimeout(function() {
         sortTableByVSTId();
+        // After potential DOM rearrangement, ensure icons are refreshed
+        refreshFeatherIcons();
     }, 1000);
-    
+
     console.log('Author visit management system loaded successfully');
+
+    // Watch for DOM changes that may insert new elements with data-feather attributes
+    try {
+        var __iconObserver = new MutationObserver(function(mutations) {
+            var needsRefresh = false;
+            for (var i = 0; i < mutations.length; i++) {
+                var m = mutations[i];
+                if (m.addedNodes && m.addedNodes.length) {
+                    for (var j = 0; j < m.addedNodes.length; j++) {
+                        var node = m.addedNodes[j];
+                        if (node.nodeType !== 1) continue;
+                        if (node.hasAttribute && node.hasAttribute('data-feather')) {
+                            needsRefresh = true; break;
+                        }
+                        if (node.querySelector && node.querySelector('[data-feather]')) {
+                            needsRefresh = true; break;
+                        }
+                    }
+                }
+                if (needsRefresh) break;
+            }
+            if (needsRefresh) refreshFeatherIcons();
+        });
+
+        __iconObserver.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {
+        // If MutationObserver isn't available, fall back to a minimal interval refresher
+        setInterval(function() {
+            try { refreshFeatherIcons(); } catch (err) { }
+        }, 3000);
+    }
 });
 </script>
 @endpush

@@ -41,16 +41,27 @@ class AuthorVisitController extends Controller
         $visitsByName = Visit::where('author_name', $author->name)->count();
         \Log::info('Visits by author name "' . $author->name . '": ' . $visitsByName);
         
+        // Build a list of possible author_id values to match stored visit records.
+        // Some records use 'AUTHOR001' while others use 'USER001' or similar; accept both.
+        $authorIdsToMatch = [$author->id];
+        if (is_string($author->id)) {
+            if (str_starts_with($author->id, 'AUTHOR')) {
+                $num = substr($author->id, 6);
+                $authorIdsToMatch[] = 'USER' . $num;
+            } elseif (str_starts_with($author->id, 'USER')) {
+                $num = substr($author->id, 4);
+                // If numeric part already includes leading zeros, keep them
+                $authorIdsToMatch[] = 'AUTHOR' . $num;
+            }
+        }
+
         $query = Visit::query()
                       ->with([
                           'admin:id,name,email', 
                           'auditor:id,name,email,phone', 
                           'author:id,name,email,phone'
                       ])
-                      ->where(function($q) use ($author) {
-                          $q->where('author_id', $author->id)
-                            ->orWhere('author_name', $author->name);
-                      });
+                      ->whereIn('author_id', $authorIdsToMatch);
 
         // Apply filters
         if ($request->filled('status') && $request->status != '') {
@@ -80,11 +91,8 @@ class AuthorVisitController extends Controller
         $statuses = ['belum_dikunjungi', 'dalam_perjalanan', 'sedang_dikunjungi', 'menunggu_acc', 'selesai'];
         
         // Calculate statistics - use fresh query for each count to avoid where conflicts
-        $authorQuery = function() use ($author) {
-            return Visit::where(function($q) use ($author) {
-                $q->where('author_id', $author->id)
-                  ->orWhere('author_name', $author->name);
-            });
+        $authorQuery = function() use ($authorIdsToMatch) {
+            return Visit::whereIn('author_id', $authorIdsToMatch);
         };
         
         $totalVisits = $authorQuery()->count();
@@ -146,8 +154,8 @@ class AuthorVisitController extends Controller
         try {
             $author = Auth::user();
             
-            // Check if the visit belongs to current author (by ID or name for backward compatibility)
-            if ($visit->author_id !== $author->id && $visit->author_name !== $author->name) {
+            // Ensure the visit belongs to the current author by matching any allowed author ids
+            if (!in_array($visit->author_id, $authorIdsToMatch ?? [$author->id])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke kunjungan ini.'
@@ -291,8 +299,8 @@ class AuthorVisitController extends Controller
                 'user_name' => $author->name ?? 'Unknown'
             ]);
 
-            // Check if the visit belongs to current author (by ID or name for backward compatibility)
-            if ($visit->author_id !== $author->id && $visit->author_name !== $author->name) {
+            // Ensure the visit belongs to the current author by matching any allowed author ids
+            if (!in_array($visit->author_id, $authorIdsToMatch ?? [$author->id])) {
                 \Log::warning('AuthorVisitController::confirm - Access denied', [
                     'visit_author_id' => $visit->author_id,
                     'visit_author_name' => $visit->author_name,
@@ -352,8 +360,8 @@ class AuthorVisitController extends Controller
         try {
             $author = Auth::user();
             
-            // Check if the visit belongs to current author (by ID or name for backward compatibility)
-            if ($visit->author_id !== $author->id && $visit->author_name !== $author->name) {
+            // Ensure the visit belongs to the current author by matching any allowed author ids
+            if (!in_array($visit->author_id, $authorIdsToMatch ?? [$author->id])) {
                 return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses ke kunjungan ini.'], 403);
             }
 

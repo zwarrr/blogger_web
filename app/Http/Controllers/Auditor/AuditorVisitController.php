@@ -105,10 +105,11 @@ class AuditorVisitController extends Controller
         }
 
         // Load relationships with specific fields if not already loaded
+        // Note: the Visit model does not define a 'report' relationship (visitReport is commented out),
+        // so do not attempt to load it to avoid an undefined relationship exception.
         $visit->load([
             'author:id,name,email,phone,address', 
-            'auditor:id,name,email,phone',
-            'report'
+            'auditor:id,name,email,phone'
         ]);
         
         $data = [

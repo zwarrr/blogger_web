@@ -314,9 +314,9 @@
                             </thead>
                             
                             <!-- Table Body -->
-                            <tbody id="visits-table-body">
+                            <tbody id="visits-table-body" data-page-offset="{{ ($visits->currentPage()-1)*$visits->perPage() }}">
                                 @forelse($visits as $index => $visit)
-                                    <tr class="border-t hover:bg-gray-50 transition-colors">
+                                    <tr class="border-t hover:bg-gray-50 transition-colors" data-visit-id="{{ $visit->id }}">
                                         <!-- Row Number -->
                                         <td class="px-4 py-3 text-center">
                                             <div class="text-xs text-gray-600 font-medium">
@@ -328,7 +328,7 @@
                                         <td class="px-4 py-3">
                                             <div class="flex justify-center">
                                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-100 shadow-sm">
-                                                    <span>{{ $visit->visit_id ?: 'VST' . str_pad($visit->id, 4, '0', STR_PAD_LEFT) }}</span>
+                                                    <span>{{ 'VST' . str_pad(($visits->currentPage()-1)*$visits->perPage()+$index+1, 4, '0', STR_PAD_LEFT) }}</span>
                                                 </span>
                                             </div>
                                         </td>
@@ -595,53 +595,22 @@
         }
 
 
-        // Sort table by VST ID - Enhanced to regenerate sequential VST IDs for role-specific data
+        // Sort table by VST ID - Adjust visible row numbers respecting pagination
         function sortTableByVSTId() {
-            console.log('Starting VST ID sorting for Admin panel...');
             var tbody = document.getElementById('visits-table-body');
-            if (!tbody) {
-                console.log('Table body not found');
-                return;
-            }
-            
-            var rows = Array.from(tbody.querySelectorAll('tr')).filter(row => {
-                // Only process data rows (skip empty or header rows)
-                var vstIdCell = row.querySelector('td:nth-child(2) span span');
-                return vstIdCell && vstIdCell.textContent.trim().startsWith('VST');
-            });
-            
-            console.log('Found ' + rows.length + ' VST rows to sort');
-            if (rows.length === 0) return;
-            
-            // Sort rows by current DOM order (maintain server-side ordering) and assign sequential VST IDs
-            // Server already provides proper ordering (newest first), so we maintain that order
-            // and just assign VST0001, VST0002, etc. based on current position
-            
-            // Clear tbody and append rows with sequential VST IDs starting from VST0001
-            // The rows are already in the correct order from server (newest first)
-            tbody.innerHTML = '';
+            if (!tbody) return;
+
+            var pageOffset = parseInt(tbody.getAttribute('data-page-offset') || 0, 10);
+            var rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.querySelector('td:first-child'));
+
             rows.forEach(function(row, index) {
-                // Update row number in first column to be sequential (1, 2, 3...)
                 var rowNumberCell = row.querySelector('td:first-child .text-xs.text-gray-600');
                 if (rowNumberCell) {
-                    rowNumberCell.textContent = (index + 1);
+                    rowNumberCell.textContent = (pageOffset + index + 1);
                 }
-                
-                // Update VST ID to be sequential starting from VST0001
-                var vstIdCell = row.querySelector('td:nth-child(2) span span');
-                if (vstIdCell) {
-                    // Store original VST ID as data attribute for backend operations before changing
-                    if (!vstIdCell.getAttribute('data-original-vst')) {
-                        vstIdCell.setAttribute('data-original-vst', vstIdCell.textContent.trim());
-                    }
-                    
-                    var newVstId = 'VST' + String(index + 1).padStart(4, '0');
-                    vstIdCell.textContent = newVstId;
-                }
-                
-                tbody.appendChild(row);
+                // Keep server-provided visit IDs untouched in the second column
             });
-            
+        }
             console.log('VST ID sorting completed for Admin panel with sequential VST IDs');
         }
 
@@ -720,6 +689,15 @@
             document.querySelectorAll('[id^="dropdown-"]').forEach(function(d) {
                 d.classList.add('hidden');
             });
+            
+            // Find the display index for VST ID generation
+            var row = document.querySelector('tr[data-visit-id="' + id + '"]');
+            if (row) {
+                var rowNumber = row.querySelector('td:first-child div');
+                if (rowNumber) {
+                    window.currentVisitDisplayIndex = parseInt(rowNumber.textContent);
+                }
+            }
             
             // Show loading in modal
             var modal = document.getElementById('detailModal');
@@ -860,7 +838,7 @@
             content += '<div class="grid grid-cols-2 gap-4">';
             content += '<div>';
             content += '<label class="block text-xs font-medium text-gray-700 mb-1">ID Kunjungan</label>';
-            content += '<div class="text-sm font-semibold text-gray-900">' + (visit.visit_id || 'VST' + String(visit.id).padStart(4, '0')) + '</div>';
+            content += '<div class="text-sm font-semibold text-gray-900">VST' + String((window.currentVisitDisplayIndex || visit.id || 0)).padStart(4, '0') + '</div>';
             content += '</div>';
             content += '<div>';
             content += '<label class="block text-xs font-medium text-gray-700 mb-1">Status</label>';

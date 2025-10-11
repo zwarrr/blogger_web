@@ -2,7 +2,7 @@
 <style>
   [x-cloak] { display: none !important; }
 </style>
-<aside x-data="{ open: false, showComingSoonModal: false, showProfileModal: false, showSettingsModal: false }" class="fixed left-0 top-0 w-64 h-screen bg-gradient-to-b from-white to-gray-100 text-gray-800 flex flex-col px-6 py-8 shadow-2xl border-r border-gray-200 z-20 overflow-visible">
+<aside x-data="{ open: false, showComingSoonModal: false, showProfileModal: false, showSettingsModal: false }" class="fixed left-0 top-0 w-64 h-full bg-gradient-to-b from-white to-gray-100 text-gray-800 flex flex-col px-6 py-8 shadow-2xl border-r border-gray-200 z-20 overflow-visible">
   <!-- Logo / Brand -->
   <div class="flex items-center gap-2 mb-12">
     <div class="bg-orange-500 w-9 h-9 rounded-full flex items-center justify-center text-white">
