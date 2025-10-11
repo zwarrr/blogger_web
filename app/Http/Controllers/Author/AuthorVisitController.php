@@ -154,8 +154,22 @@ class AuthorVisitController extends Controller
         try {
             $author = Auth::user();
             
+            // Build a list of possible author_id values to match stored visit records.
+            // Some records use 'AUTHOR001' while others use 'USER001' or similar; accept both.
+            $authorIdsToMatch = [$author->id];
+            if (is_string($author->id)) {
+                if (str_starts_with($author->id, 'AUTHOR')) {
+                    $num = substr($author->id, 6);
+                    $authorIdsToMatch[] = 'USER' . $num;
+                } elseif (str_starts_with($author->id, 'USER')) {
+                    $num = substr($author->id, 4);
+                    // If numeric part already includes leading zeros, keep them
+                    $authorIdsToMatch[] = 'AUTHOR' . $num;
+                }
+            }
+            
             // Ensure the visit belongs to the current author by matching any allowed author ids
-            if (!in_array($visit->author_id, $authorIdsToMatch ?? [$author->id])) {
+            if (!in_array($visit->author_id, $authorIdsToMatch)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke kunjungan ini.'
@@ -299,13 +313,28 @@ class AuthorVisitController extends Controller
                 'user_name' => $author->name ?? 'Unknown'
             ]);
 
+            // Build a list of possible author_id values to match stored visit records.
+            // Some records use 'AUTHOR001' while others use 'USER001' or similar; accept both.
+            $authorIdsToMatch = [$author->id];
+            if (is_string($author->id)) {
+                if (str_starts_with($author->id, 'AUTHOR')) {
+                    $num = substr($author->id, 6);
+                    $authorIdsToMatch[] = 'USER' . $num;
+                } elseif (str_starts_with($author->id, 'USER')) {
+                    $num = substr($author->id, 4);
+                    // If numeric part already includes leading zeros, keep them
+                    $authorIdsToMatch[] = 'AUTHOR' . $num;
+                }
+            }
+
             // Ensure the visit belongs to the current author by matching any allowed author ids
-            if (!in_array($visit->author_id, $authorIdsToMatch ?? [$author->id])) {
+            if (!in_array($visit->author_id, $authorIdsToMatch)) {
                 \Log::warning('AuthorVisitController::confirm - Access denied', [
                     'visit_author_id' => $visit->author_id,
                     'visit_author_name' => $visit->author_name,
                     'current_user_id' => $author->id,
-                    'current_user_name' => $author->name
+                    'current_user_name' => $author->name,
+                    'authorIdsToMatch' => $authorIdsToMatch
                 ]);
                 return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses ke kunjungan ini.'], 403);
             }
@@ -360,8 +389,22 @@ class AuthorVisitController extends Controller
         try {
             $author = Auth::user();
             
+            // Build a list of possible author_id values to match stored visit records.
+            // Some records use 'AUTHOR001' while others use 'USER001' or similar; accept both.
+            $authorIdsToMatch = [$author->id];
+            if (is_string($author->id)) {
+                if (str_starts_with($author->id, 'AUTHOR')) {
+                    $num = substr($author->id, 6);
+                    $authorIdsToMatch[] = 'USER' . $num;
+                } elseif (str_starts_with($author->id, 'USER')) {
+                    $num = substr($author->id, 4);
+                    // If numeric part already includes leading zeros, keep them
+                    $authorIdsToMatch[] = 'AUTHOR' . $num;
+                }
+            }
+            
             // Ensure the visit belongs to the current author by matching any allowed author ids
-            if (!in_array($visit->author_id, $authorIdsToMatch ?? [$author->id])) {
+            if (!in_array($visit->author_id, $authorIdsToMatch)) {
                 return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses ke kunjungan ini.'], 403);
             }
 
