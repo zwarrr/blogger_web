@@ -203,7 +203,7 @@
                     <td class="px-4 py-3">
                       <div class="flex justify-center">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          USR{{ str_pad($loop->iteration, 4, '0', STR_PAD_LEFT) }}
+                          USR{{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}
                         </span>
                       </div>
                     </td>
@@ -254,7 +254,7 @@
                           </button>
                           <div class="border-t border-gray-100 my-1"></div>
                           <button type="button"
-                                  onclick="if(confirm('Are you sure you want to delete user: {{ $user['name'] ?? 'Unknown User' }}? This action cannot be undone.')) { alert('Delete functionality will be implemented when route is added.'); }"
+                                  onclick="openDeleteUserModal({{ json_encode($user ?? []) }})"
                                   class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 flex-shrink-0">
                               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -364,6 +364,93 @@
                 <div class="col-span-2 flex items-center justify-end gap-3 pt-3">
                   <button type="button" id="btnCancelEditUser" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 focus:outline-none">Cancel</button>
                   <button type="button" id="btnUpdateUser" class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 focus:outline-none">Update User</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delete User Modal -->
+        <div id="modalDeleteUser" class="fixed inset-0 z-[9999] hidden" aria-hidden="true">
+          <div class="fixed inset-0 bg-black/70 modal-backdrop"></div>
+          <div class="relative z-10 w-full h-full flex items-center justify-center">
+            <div class="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-md mx-4">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-red-600 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                    <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                  </svg>
+                  Delete User
+                </h3>
+                <button id="btnCloseDeleteUser" class="text-gray-500 hover:text-gray-700 focus:outline-none">✕</button>
+              </div>
+              <div class="p-6">
+                <div class="text-center mb-6">
+                  <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-red-600">
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                  </div>
+                  <h4 class="text-lg font-semibold text-gray-900 mb-2">Are you sure?</h4>
+                  <p class="text-gray-600 mb-1">You are about to delete user:</p>
+                  <p class="font-semibold text-gray-900" id="deleteUserName"></p>
+                  <p class="text-sm text-gray-500 mt-2">This action cannot be undone and will permanently remove all user data.</p>
+                </div>
+                
+                <!-- User Info Card -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                      <span id="deleteUserInitial" class="text-sm font-semibold text-orange-600"></span>
+                    </div>
+                    <div>
+                      <p class="font-medium text-gray-900" id="deleteUserFullName"></p>
+                      <p class="text-sm text-gray-500" id="deleteUserEmail"></p>
+                      <span id="deleteUserRole" class="inline-block px-2 py-1 text-xs font-medium rounded-full mt-1"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3">
+                  <button type="button" id="btnCancelDeleteUser" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none transition-colors">
+                    Cancel
+                  </button>
+                  <button type="button" id="btnConfirmDeleteUser" class="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                    Delete User
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delete Result Modal -->
+        <div id="modalDeleteResult" class="fixed inset-0 z-[9999] hidden" aria-hidden="true">
+          <div class="fixed inset-0 bg-black/70 modal-backdrop"></div>
+          <div class="relative z-10 w-full h-full flex items-center justify-center">
+            <div class="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-md mx-4">
+              <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 id="deleteResultTitle" class="text-lg font-semibold flex items-center gap-2">
+                  <!-- Icon will be set dynamically -->
+                </h3>
+                <button id="btnCloseDeleteResult" class="text-gray-500 hover:text-gray-700 focus:outline-none">✕</button>
+              </div>
+              <div class="p-6">
+                <div class="text-center mb-6">
+                  <div id="deleteResultIcon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <!-- Icon will be set dynamically -->
+                  </div>
+                  <h4 id="deleteResultHeading" class="text-lg font-semibold text-gray-900 mb-2"></h4>
+                  <p id="deleteResultMessage" class="text-gray-600"></p>
+                </div>
+                
+                <div class="flex items-center justify-center">
+                  <button type="button" id="btnOkDeleteResult" class="px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 focus:outline-none transition-colors">
+                    OK
+                  </button>
                 </div>
               </div>
             </div>
@@ -588,6 +675,239 @@
                 hideLoading();
                 console.error('Error in handleUpdateUser:', error);
                 alert('Error updating user. Please try again.');
+              }
+            }
+
+              // Delete User Modal logic
+              const deleteModal = document.getElementById('modalDeleteUser');
+              const deleteCloseBtn = document.getElementById('btnCloseDeleteUser');
+              const deleteCancelBtn = document.getElementById('btnCancelDeleteUser');
+              const deleteConfirmBtn = document.getElementById('btnConfirmDeleteUser');
+
+              function openDeleteModal(){
+                if (deleteModal) {
+                  deleteModal.classList.remove('hidden');
+                  document.documentElement.classList.add('overflow-hidden');
+                  document.body.classList.add('overflow-hidden');
+                }
+              }
+              function closeDeleteModal(){
+                if (deleteModal) {
+                  deleteModal.classList.add('hidden');
+                  document.documentElement.classList.remove('overflow-hidden');
+                  document.body.classList.remove('overflow-hidden');
+                }
+              }
+
+              if (deleteCloseBtn) deleteCloseBtn.addEventListener('click', closeDeleteModal);
+              if (deleteCancelBtn) deleteCancelBtn.addEventListener('click', closeDeleteModal);
+              if (deleteModal) deleteModal.addEventListener('click', (e)=>{ if(e.target === deleteModal) closeDeleteModal(); });
+              
+              // Delete confirm button event listener
+              if (deleteConfirmBtn) {
+                deleteConfirmBtn.addEventListener('click', handleDeleteUser);
+              }
+
+              // Delete Result Modal logic
+              const deleteResultModal = document.getElementById('modalDeleteResult');
+              const deleteResultCloseBtn = document.getElementById('btnCloseDeleteResult');
+              const deleteResultOkBtn = document.getElementById('btnOkDeleteResult');
+
+              function openDeleteResultModal(type, title, message, userName = '') {
+                if (deleteResultModal) {
+                  const titleEl = document.getElementById('deleteResultTitle');
+                  const iconEl = document.getElementById('deleteResultIcon');
+                  const headingEl = document.getElementById('deleteResultHeading');
+                  const messageEl = document.getElementById('deleteResultMessage');
+
+                  if (type === 'success') {
+                    titleEl.innerHTML = `
+                      <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="text-green-600">${title}</span>
+                    `;
+                    iconEl.className = 'w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4';
+                    iconEl.innerHTML = `
+                      <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                      </svg>
+                    `;
+                    headingEl.textContent = 'Success!';
+                    deleteResultOkBtn.className = 'px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none transition-colors';
+                  } else if (type === 'info') {
+                    titleEl.innerHTML = `
+                      <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="text-blue-600">${title}</span>
+                    `;
+                    iconEl.className = 'w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4';
+                    iconEl.innerHTML = `
+                      <svg class="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                      </svg>
+                    `;
+                    headingEl.textContent = 'Information';
+                    deleteResultOkBtn.className = 'px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none transition-colors';
+                  } else {
+                    // error
+                    titleEl.innerHTML = `
+                      <svg class="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="text-red-600">${title}</span>
+                    `;
+                    iconEl.className = 'w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4';
+                    iconEl.innerHTML = `
+                      <svg class="w-8 h-8 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                      </svg>
+                    `;
+                    headingEl.textContent = 'Error';
+                    deleteResultOkBtn.className = 'px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none transition-colors';
+                  }
+
+                  messageEl.textContent = message;
+                  
+                  deleteResultModal.classList.remove('hidden');
+                  document.documentElement.classList.add('overflow-hidden');
+                  document.body.classList.add('overflow-hidden');
+                }
+              }
+
+              function closeDeleteResultModal(){
+                if (deleteResultModal) {
+                  deleteResultModal.classList.add('hidden');
+                  document.documentElement.classList.remove('overflow-hidden');
+                  document.body.classList.remove('overflow-hidden');
+                }
+              }
+
+              if (deleteResultCloseBtn) deleteResultCloseBtn.addEventListener('click', closeDeleteResultModal);
+              if (deleteResultOkBtn) deleteResultOkBtn.addEventListener('click', closeDeleteResultModal);
+              if (deleteResultModal) deleteResultModal.addEventListener('click', (e)=>{ if(e.target === deleteResultModal) closeDeleteResultModal(); });
+
+            // Global function to open delete modal with user data
+            window.openDeleteUserModal = function(user) {
+              try {
+                if (!user || typeof user !== 'object') {
+                  console.error('Invalid user data provided');
+                  return;
+                }
+                
+                // Populate delete modal with user info
+                const deleteUserName = document.getElementById('deleteUserName');
+                const deleteUserFullName = document.getElementById('deleteUserFullName');
+                const deleteUserEmail = document.getElementById('deleteUserEmail');
+                const deleteUserRole = document.getElementById('deleteUserRole');
+                const deleteUserInitial = document.getElementById('deleteUserInitial');
+                
+                if (deleteUserName) deleteUserName.textContent = user.name || 'Unknown User';
+                if (deleteUserFullName) deleteUserFullName.textContent = user.name || 'Unknown User';
+                if (deleteUserEmail) deleteUserEmail.textContent = user.email || 'No email';
+                if (deleteUserInitial) {
+                  const initial = (user.name || 'U').charAt(0).toUpperCase();
+                  deleteUserInitial.textContent = initial;
+                }
+                
+                // Set role badge with appropriate styling
+                if (deleteUserRole) {
+                  const role = user.role || 'user';
+                  deleteUserRole.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+                  
+                  // Remove existing classes and add role-specific styling
+                  deleteUserRole.className = 'inline-block px-2 py-1 text-xs font-medium rounded-full mt-1';
+                  switch(role) {
+                    case 'admin':
+                      deleteUserRole.classList.add('bg-red-100', 'text-red-800');
+                      break;
+                    case 'auditor':
+                      deleteUserRole.classList.add('bg-green-100', 'text-green-800');
+                      break;
+                    case 'author':
+                      deleteUserRole.classList.add('bg-orange-100', 'text-orange-800');
+                      break;
+                    default:
+                      deleteUserRole.classList.add('bg-gray-100', 'text-gray-800');
+                  }
+                }
+                
+                // Store user ID for deletion
+                deleteConfirmBtn.setAttribute('data-user-id', user.id || '');
+                deleteConfirmBtn.setAttribute('data-user-name', user.name || '');
+                
+                openDeleteModal();
+                closeAny(); // Close any open dropdown
+              } catch (error) {
+                console.error('Error opening delete modal:', error);
+                alert('Error opening delete confirmation. Please try again.');
+              }
+            };
+
+            // Function to handle user deletion
+            function handleDeleteUser() {
+              try {
+                const userId = deleteConfirmBtn.getAttribute('data-user-id');
+                const userName = deleteConfirmBtn.getAttribute('data-user-name');
+
+                if (!userId) {
+                  openDeleteResultModal('error', 'Error', 'User ID not found. Please try again.');
+                  return;
+                }
+
+                // Show loading state
+                const originalText = deleteConfirmBtn.innerHTML;
+                deleteConfirmBtn.innerHTML = `
+                  <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Deleting...
+                `;
+                deleteConfirmBtn.disabled = true;
+
+                // Actual delete implementation
+                fetch(`/admin/users/${userId}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.Laravel.csrfToken,
+                    'Accept': 'application/json'
+                  }
+                })
+                .then(response => response.json().then(data => ({
+                  status: response.status,
+                  ok: response.ok,
+                  data: data
+                })))
+                .then(({status, ok, data}) => {
+                  deleteConfirmBtn.innerHTML = originalText;
+                  deleteConfirmBtn.disabled = false;
+                  
+                  closeDeleteModal();
+                  
+                  if (ok && data.success) {
+                    openDeleteResultModal('success', 'User Deleted', `User "${userName}" has been successfully deleted.`);
+                    // Reload page after modal is closed to show updated data
+                    deleteResultOkBtn.addEventListener('click', () => location.reload(), { once: true });
+                  } else {
+                    openDeleteResultModal('error', 'Delete Failed', data.message || 'Failed to delete user. Please try again.');
+                  }
+                })
+                .catch(error => {
+                  deleteConfirmBtn.innerHTML = originalText;
+                  deleteConfirmBtn.disabled = false;
+                  console.error('Error deleting user:', error);
+                  closeDeleteModal();
+                  openDeleteResultModal('error', 'Network Error', 'Error deleting user. Please check your connection and try again.');
+                });
+
+              } catch (error) {
+                console.error('Error in handleDeleteUser:', error);
+                openDeleteResultModal('error', 'Unexpected Error', 'An unexpected error occurred. Please try again.');
+                deleteConfirmBtn.innerHTML = deleteConfirmBtn.getAttribute('data-original-text') || 'Delete User';
+                deleteConfirmBtn.disabled = false;
               }
             }
 

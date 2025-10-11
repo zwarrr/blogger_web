@@ -22,14 +22,14 @@
             background: linear-gradient(90deg, rgba(239, 246, 255, 0.5), rgba(219, 234, 254, 0.3));
         }
         
-        /* PDF Export Loading Overlay */
+        /* PDF Export Loading Overlay - Clean Design */
         .pdf-loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(31, 41, 55, 0.8);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -45,18 +45,20 @@
         }
         
         .pdf-loading-content {
-            background: white;
+            background: #ffffff;
             padding: 2rem;
-            border-radius: 12px;
+            border-radius: 8px;
             text-align: center;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e7eb;
+            min-width: 250px;
         }
         
         .pdf-loading-spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid #e5e7eb;
-            border-top: 4px solid #ea580c;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #3b82f6;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 1rem;
@@ -65,6 +67,19 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        .pdf-loading-content h3 {
+            color: #1f2937;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pdf-loading-content p {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin: 0;
         }
         
         /* Print-friendly styles for PDF generation */
@@ -382,12 +397,12 @@
         </main>
     </div>
 
-    <!-- PDF Loading Overlay -->
+    <!-- PDF Loading Overlay - Clean Design -->
     <div class="pdf-loading-overlay" id="pdfLoadingOverlay">
         <div class="pdf-loading-content">
             <div class="pdf-loading-spinner"></div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Menggenerate Laporan PDF</h3>
-            <p class="text-sm text-gray-600">Mohon tunggu, sedang memproses data laporan...</p>
+            <h3>Generating Report</h3>
+            <p>Processing data, please wait...</p>
         </div>
     </div>
 
@@ -555,31 +570,26 @@
             }
         });
 
-        // PDF Export Function - Enhanced Professional Styling
+        // PDF Export Function - Clean Professional Report (3 Colors: Black, Orange, Gray)
         async function exportToPDF() {
             const { jsPDF } = window.jspdf;
             
-            // Show enhanced loading overlay
+            // Show loading overlay
             const loadingOverlay = document.getElementById('pdfLoadingOverlay');
             loadingOverlay.classList.add('active');
             
             // Update button state
             const exportBtn = document.querySelector('button[onclick="exportToPDF()"]');
             const originalText = exportBtn.innerHTML;
-            exportBtn.innerHTML = '<i data-feather="loader" class="w-4 h-4 mr-2 animate-spin"></i>Processing...';
+            exportBtn.innerHTML = '<i data-feather="loader" class="w-4 h-4 mr-2 animate-spin"></i>Generating...';
             exportBtn.disabled = true;
             
             try {
-                // Get current date range from inputs
-                const startDateInput = document.querySelector('input[name="start_date"]');
-                const endDateInput = document.querySelector('input[name="end_date"]');
-                const startDate = startDateInput?.value || '{{ $startDate }}';
-                const endDate = endDateInput?.value || '{{ $endDate }}';
-                
-                // Get data from current page
+                // Get current data
                 const totalVisits = {{ $totalVisits ?? 0 }};
                 const pendingVisits = {{ $pendingVisits ?? 0 }};
                 const completedVisits = {{ $completedVisits ?? 0 }};
+                const inProgressVisits = totalVisits - pendingVisits - completedVisits;
                 const visitsByAuthor = @json($visitsByAuthor ?? []);
                 const visitsByAuditor = @json($visitsByAuditor ?? []);
                 const recentVisits = @json($recentVisits ?? []);
@@ -590,445 +600,405 @@
                 const pageHeight = pdf.internal.pageSize.getHeight();
                 const margin = 20;
                 const contentWidth = pageWidth - (margin * 2);
-                let yPosition = margin;
+                let yPos = margin;
                 
-                // Color scheme
+                // Simple 3-Color Professional Theme (Black, Orange, Gray)
                 const colors = {
-                    primary: [51, 65, 85],      // slate-700
-                    secondary: [100, 116, 139], // slate-500
-                    accent: [234, 88, 12],      // orange-600
-                    light: [248, 250, 252],     // slate-50
-                    success: [34, 197, 94],     // green-500
-                    warning: [245, 158, 11],    // amber-500
-                    danger: [239, 68, 68]       // red-500
+                    black: [0, 0, 0],           // Pure black for text
+                    orange: [249, 115, 22],     // Professional orange (orange-600)
+                    gray: [107, 114, 128],      // Medium gray (gray-500)
+                    lightGray: [243, 244, 246], // Very light gray (gray-100)
+                    white: [255, 255, 255]     // White background
                 };
+
+                // Utility functions
+                function setTextColor(color) { pdf.setTextColor(color[0], color[1], color[2]); }
+                function setFillColor(color) { pdf.setFillColor(color[0], color[1], color[2]); }
+                function setDrawColor(color) { pdf.setDrawColor(color[0], color[1], color[2]); }
                 
-                // Helper functions
-                function addNewPageIfNeeded(requiredSpace = 25) {
-                    if (yPosition > pageHeight - margin - requiredSpace) {
+                function newPageIfNeeded(space = 30) {
+                    if (yPos > pageHeight - margin - space) {
                         pdf.addPage();
-                        yPosition = margin;
+                        yPos = margin;
                         return true;
                     }
                     return false;
                 }
-                
-                function drawLine(x1, y1, x2, y2, color = colors.secondary, width = 0.5) {
-                    pdf.setDrawColor(...color);
-                    pdf.setLineWidth(width);
-                    pdf.line(x1, y1, x2, y2);
+
+                // CLEAN HEADER SECTION
+                function createHeader() {
+                    // Orange header background
+                    setFillColor(colors.orange);
+                    pdf.rect(0, 0, pageWidth, 25, 'F');
+                    
+                    // Main title
+                    pdf.setFontSize(20);
+                    pdf.setFont('helvetica', 'bold');
+                    setTextColor(colors.white);
+                    pdf.text('LAPORAN KUNJUNGAN SISTEM', pageWidth / 2, 15, { align: 'center' });
+                    
+                    yPos = 35;
+                    
+                    // Date period section
+                    setFillColor(colors.lightGray);
+                    pdf.rect(margin, yPos, contentWidth, 12, 'F');
+                    setDrawColor(colors.gray);
+                    pdf.setLineWidth(0.5);
+                    pdf.rect(margin, yPos, contentWidth, 12, 'S');
+                    
+                    pdf.setFontSize(10);
+                    pdf.setFont('helvetica', 'normal');
+                    setTextColor(colors.black);
+                    const startDate = '{{ $startDate }}';
+                    const endDate = '{{ $endDate }}';
+                    pdf.text(`Periode Laporan: ${formatDate(startDate)} - ${formatDate(endDate)}`, pageWidth / 2, yPos + 7, { align: 'center' });
+                    
+                    yPos += 20;
                 }
-                
-                function drawRect(x, y, width, height, fillColor = null, strokeColor = null) {
-                    if (fillColor) {
-                        pdf.setFillColor(...fillColor);
-                        pdf.rect(x, y, width, height, 'F');
-                    }
-                    if (strokeColor) {
-                        pdf.setDrawColor(...strokeColor);
+
+                // STATISTICS OVERVIEW SECTION
+                function createStatistics() {
+                    newPageIfNeeded(50);
+                    
+                    // Section header with orange accent
+                    setFillColor(colors.orange);
+                    pdf.rect(margin, yPos, contentWidth, 6, 'F');
+                    
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    setTextColor(colors.white);
+                    pdf.text('RINGKASAN STATISTIK', margin + 5, yPos + 4);
+                    
+                    yPos += 12;
+                    
+                    // Statistics cards in clean 2x2 grid
+                    const cardWidth = (contentWidth - 10) / 2;
+                    const cardHeight = 28;
+                    
+                    const stats = [
+                        { label: 'Total Kunjungan', value: totalVisits.toString(), desc: 'Keseluruhan data' },
+                        { label: 'Tingkat Keberhasilan', value: `${totalVisits > 0 ? Math.round((completedVisits / totalVisits) * 100) : 0}%`, desc: 'Rasio penyelesaian' },
+                        { label: 'Kunjungan Selesai', value: completedVisits.toString(), desc: 'Sudah diselesaikan' },
+                        { label: 'Menunggu Proses', value: pendingVisits.toString(), desc: 'Belum diselesaikan' }
+                    ];
+                    
+                    stats.forEach((stat, index) => {
+                        const col = index % 2;
+                        const row = Math.floor(index / 2);
+                        const x = margin + (col * (cardWidth + 5));
+                        const y = yPos + (row * (cardHeight + 8));
+                        
+                        // Card background
+                        setFillColor(colors.white);
+                        pdf.rect(x, y, cardWidth, cardHeight, 'F');
+                        
+                        // Card border
+                        setDrawColor(colors.gray);
                         pdf.setLineWidth(0.5);
-                        pdf.rect(x, y, width, height, 'S');
-                    }
+                        pdf.rect(x, y, cardWidth, cardHeight, 'S');
+                        
+                        // Orange accent line on top
+                        setFillColor(colors.orange);
+                        pdf.rect(x, y, cardWidth, 2, 'F');
+                        
+                        // Content
+                        pdf.setFontSize(9);
+                        pdf.setFont('helvetica', 'normal');
+                        setTextColor(colors.gray);
+                        pdf.text(stat.label, x + 6, y + 10);
+                        
+                        pdf.setFontSize(18);
+                        pdf.setFont('helvetica', 'bold');
+                        setTextColor(colors.black);
+                        pdf.text(stat.value, x + 6, y + 20);
+                        
+                        pdf.setFontSize(8);
+                        pdf.setFont('helvetica', 'normal');
+                        setTextColor(colors.gray);
+                        pdf.text(stat.desc, x + 6, y + 25);
+                    });
+                    
+                    yPos += (cardHeight + 8) * 2 + 15;
                 }
-                
-                function addText(text, x, y, options = {}) {
-                    const {
-                        fontSize = 12,
-                        fontStyle = 'normal',
-                        color = colors.primary,
-                        align = 'left',
-                        maxWidth = null
-                    } = options;
+
+                // CLEAN CHART SECTION
+                function createChart() {
+                    if (totalVisits === 0) return;
                     
-                    pdf.setFontSize(fontSize);
-                    pdf.setFont('helvetica', fontStyle);
-                    pdf.setTextColor(...color);
+                    newPageIfNeeded(60);
                     
-                    if (maxWidth) {
-                        const lines = pdf.splitTextToSize(text, maxWidth);
-                        pdf.text(lines, x, y, { align });
-                        return lines.length * (fontSize * 0.352778); // Convert pt to mm
-                    } else {
-                        pdf.text(text, x, y, { align });
-                        return fontSize * 0.352778;
-                    }
+                    // Section header
+                    setFillColor(colors.orange);
+                    pdf.rect(margin, yPos, contentWidth, 6, 'F');
+                    
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    setTextColor(colors.white);
+                    pdf.text('DISTRIBUSI STATUS', margin + 5, yPos + 4);
+                    
+                    yPos += 12;
+                    
+                    // Chart data with only 3 colors
+                    const chartData = [
+                        { label: 'Selesai', value: completedVisits, color: colors.black },
+                        { label: 'Pending', value: pendingVisits, color: colors.orange },
+                        { label: 'Proses', value: inProgressVisits, color: colors.gray }
+                    ].filter(item => item.value > 0);
+                    
+                    // Chart area
+                    const chartX = margin + 15;
+                    const chartY = yPos + 8;
+                    const chartWidth = 100;
+                    const chartHeight = 40;
+                    
+                    // Background for chart
+                    setFillColor(colors.lightGray);
+                    pdf.rect(chartX - 5, chartY - 5, chartWidth + 10, chartHeight + 15, 'F');
+                    
+                    // Draw clean bar chart
+                    const maxValue = Math.max(...chartData.map(d => d.value));
+                    const barWidth = chartWidth / chartData.length - 8;
+                    
+                    chartData.forEach((data, index) => {
+                        const barHeight = (data.value / maxValue) * chartHeight;
+                        const x = chartX + (index * (barWidth + 8));
+                        const y = chartY + chartHeight - barHeight;
+                        
+                        // Draw bar
+                        setFillColor(data.color);
+                        pdf.rect(x, y, barWidth, barHeight, 'F');
+                        
+                        // Value on top of bar
+                        pdf.setFontSize(10);
+                        pdf.setFont('helvetica', 'bold');
+                        setTextColor(data.color);
+                        pdf.text(data.value.toString(), x + barWidth/2, y - 2, { align: 'center' });
+                        
+                        // Label below bar
+                        pdf.setFontSize(8);
+                        pdf.setFont('helvetica', 'normal');
+                        setTextColor(colors.black);
+                        pdf.text(data.label, x + barWidth/2, chartY + chartHeight + 8, { align: 'center' });
+                    });
+                    
+                    // Simple legend
+                    const legendX = chartX + chartWidth + 20;
+                    let legendY = chartY + 8;
+                    
+                    chartData.forEach((data) => {
+                        // Color box
+                        setFillColor(data.color);
+                        pdf.rect(legendX, legendY - 2, 3, 3, 'F');
+                        
+                        // Label with percentage
+                        pdf.setFontSize(9);
+                        pdf.setFont('helvetica', 'normal');
+                        setTextColor(colors.black);
+                        const percentage = Math.round((data.value / totalVisits) * 100);
+                        pdf.text(`${data.label}: ${percentage}%`, legendX + 6, legendY);
+                        legendY += 6;
+                    });
+                    
+                    yPos += chartHeight + 25;
                 }
-                
-                // HEADER SECTION WITH LOGO AREA
-                drawRect(margin, yPosition, contentWidth, 25, colors.light);
-                drawRect(margin, yPosition, contentWidth, 25, null, colors.secondary);
-                
-                // Company/Institution Header
-                addText('SISTEM MANAJEMEN KUNJUNGAN AUDITOR', pageWidth / 2, yPosition + 8, {
-                    fontSize: 16,
-                    fontStyle: 'bold',
-                    color: colors.primary,
-                    align: 'center'
-                });
-                
-                addText('Laporan Komprehensif Aktivitas Audit', pageWidth / 2, yPosition + 15, {
-                    fontSize: 12,
-                    color: colors.secondary,
-                    align: 'center'
-                });
-                
-                addText(`Periode: ${formatDate(startDate)} - ${formatDate(endDate)}`, pageWidth / 2, yPosition + 21, {
-                    fontSize: 10,
-                    color: colors.secondary,
-                    align: 'center'
-                });
-                
-                yPosition += 35;
-                
-                // EXECUTIVE SUMMARY SECTION
-                addNewPageIfNeeded(60);
-                addText('RINGKASAN EKSEKUTIF', margin, yPosition, {
-                    fontSize: 14,
-                    fontStyle: 'bold',
-                    color: colors.primary
-                });
-                
-                yPosition += 8;
-                drawLine(margin, yPosition, pageWidth - margin, yPosition, colors.accent, 2);
-                yPosition += 10;
-                
-                // Statistics cards
-                const statsData = [
-                    {
-                        label: 'Total Kunjungan',
-                        value: totalVisits.toLocaleString('id-ID'),
-                        subtitle: 'Keseluruhan aktivitas audit',
-                        color: colors.primary
-                    },
-                    {
-                        label: 'Belum Dikunjungi',
-                        value: `${pendingVisits.toLocaleString('id-ID')} (${totalVisits > 0 ? Math.round((pendingVisits / totalVisits) * 100) : 0}%)`,
-                        subtitle: 'Menunggu tindak lanjut',
-                        color: colors.warning
-                    },
-                    {
-                        label: 'Kunjungan Selesai',
-                        value: `${completedVisits.toLocaleString('id-ID')} (${totalVisits > 0 ? Math.round((completedVisits / totalVisits) * 100) : 0}%)`,
-                        subtitle: 'Telah diselesaikan',
-                        color: colors.success
-                    },
-                    {
-                        label: 'Tingkat Keberhasilan',
-                        value: `${totalVisits > 0 ? Math.round((completedVisits / totalVisits) * 100) : 0}%`,
-                        subtitle: 'Efektivitas audit',
-                        color: colors.accent
-                    }
-                ];
-                
-                // Draw statistics in 2x2 grid
-                const cardWidth = (contentWidth - 10) / 2;
-                const cardHeight = 25;
-                
-                for (let i = 0; i < statsData.length; i++) {
-                    const col = i % 2;
-                    const row = Math.floor(i / 2);
-                    const x = margin + (col * (cardWidth + 10));
-                    const y = yPosition + (row * (cardHeight + 5));
+
+                // CLEAN TABLE FUNCTION
+                function createTable(title, data, isAuthor = true) {
+                    if (!data || data.length === 0) return;
                     
-                    // Card background
-                    drawRect(x, y, cardWidth, cardHeight, [255, 255, 255]);
-                    drawRect(x, y, cardWidth, cardHeight, null, colors.secondary);
+                    newPageIfNeeded(50);
                     
-                    // Colored accent bar
-                    drawRect(x, y, 3, cardHeight, statsData[i].color);
+                    // Section header
+                    setFillColor(colors.orange);
+                    pdf.rect(margin, yPos, contentWidth, 6, 'F');
                     
-                    // Content
-                    addText(statsData[i].label, x + 8, y + 8, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.secondary
-                    });
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    setTextColor(colors.white);
+                    pdf.text(title, margin + 5, yPos + 4);
                     
-                    addText(statsData[i].value, x + 8, y + 15, {
-                        fontSize: 14,
-                        fontStyle: 'bold',
-                        color: statsData[i].color
-                    });
+                    yPos += 12;
                     
-                    addText(statsData[i].subtitle, x + 8, y + 21, {
-                        fontSize: 8,
-                        color: colors.secondary
-                    });
-                }
-                
-                yPosition += 60;
-                
-                // PERFORMANCE ANALYSIS SECTION
-                if (visitsByAuthor && visitsByAuthor.length > 0) {
-                    addNewPageIfNeeded(80);
-                    
-                    addText('ANALISIS KINERJA AUTHOR', margin, yPosition, {
-                        fontSize: 14,
-                        fontStyle: 'bold',
-                        color: colors.primary
-                    });
-                    
-                    yPosition += 8;
-                    drawLine(margin, yPosition, pageWidth - margin, yPosition, colors.accent, 2);
-                    yPosition += 15;
+                    // Table setup
+                    const colWidths = [15, 90, 25, 25];
+                    const rowHeight = 8;
                     
                     // Table header
-                    drawRect(margin, yPosition, contentWidth, 8, colors.light);
-                    drawRect(margin, yPosition, contentWidth, 8, null, colors.secondary);
+                    setFillColor(colors.lightGray);
+                    pdf.rect(margin, yPos, contentWidth, rowHeight, 'F');
+                    setDrawColor(colors.gray);
+                    pdf.setLineWidth(0.5);
+                    pdf.rect(margin, yPos, contentWidth, rowHeight, 'S');
                     
-                    addText('Ranking', margin + 5, yPosition + 5, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.primary
+                    // Header text
+                    pdf.setFontSize(9);
+                    pdf.setFont('helvetica', 'bold');
+                    setTextColor(colors.black);
+                    
+                    let currentX = margin;
+                    const headers = ['No.', isAuthor ? 'Nama Author' : 'Nama Auditor', 'Total', 'Persen'];
+                    headers.forEach((header, i) => {
+                        pdf.text(header, currentX + 3, yPos + 5.5);
+                        currentX += colWidths[i];
                     });
                     
-                    addText('Nama Author', margin + 25, yPosition + 5, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.primary
-                    });
-                    
-                    addText('Jumlah Kunjungan', pageWidth - margin - 35, yPosition + 5, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.primary
-                    });
-                    
-                    addText('Persentase', pageWidth - margin - 5, yPosition + 5, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.primary,
-                        align: 'right'
-                    });
-                    
-                    yPosition += 8;
+                    yPos += rowHeight;
                     
                     // Table rows
-                    visitsByAuthor.slice(0, 10).forEach((author, index) => {
-                        const rowHeight = 8;
-                        const isEven = index % 2 === 0;
+                    data.slice(0, 8).forEach((item, index) => {
+                        currentX = margin;
                         
-                        if (isEven) {
-                            drawRect(margin, yPosition, contentWidth, rowHeight, [249, 250, 251]);
+                        // Alternating row background
+                        if (index % 2 === 1) {
+                            setFillColor(colors.lightGray);
+                            pdf.rect(margin, yPos, contentWidth, rowHeight, 'F');
                         }
                         
-                        const authorName = (author.author && author.author.name) || author.author_name || 'Author tidak tersedia';
-                        const percentage = totalVisits > 0 ? ((author.total / totalVisits) * 100).toFixed(1) : '0.0';
+                        // Row border
+                        setDrawColor(colors.gray);
+                        pdf.setLineWidth(0.3);
+                        pdf.line(margin, yPos + rowHeight, margin + contentWidth, yPos + rowHeight);
                         
-                        addText((index + 1).toString(), margin + 5, yPosition + 5, {
-                            fontSize: 9,
-                            color: colors.secondary
-                        });
+                        const name = isAuthor ? (item.author_name || 'Unknown') : (item.auditor_name || 'Unknown');
+                        const cleanName = name.replace(/[^\x20-\x7E]/g, '').substring(0, 30);
+                        const percentage = totalVisits > 0 ? ((item.total / totalVisits) * 100).toFixed(1) : '0.0';
                         
-                        addText(authorName, margin + 25, yPosition + 5, {
-                            fontSize: 9,
-                            color: colors.primary,
-                            maxWidth: 80
-                        });
+                        // Row content
+                        pdf.setFontSize(8);
+                        pdf.setFont('helvetica', 'normal');
+                        setTextColor(colors.black);
                         
-                        addText(author.total.toLocaleString('id-ID'), pageWidth - margin - 35, yPosition + 5, {
-                            fontSize: 9,
-                            fontStyle: 'bold',
-                            color: colors.accent
-                        });
+                        // Rank
+                        pdf.text(`${index + 1}.`, currentX + colWidths[0]/2, yPos + 5.5, { align: 'center' });
+                        currentX += colWidths[0];
                         
-                        addText(`${percentage}%`, pageWidth - margin - 5, yPosition + 5, {
-                            fontSize: 9,
-                            color: colors.secondary,
-                            align: 'right'
-                        });
+                        // Name
+                        pdf.text(cleanName, currentX + 3, yPos + 5.5);
+                        currentX += colWidths[1];
                         
-                        yPosition += rowHeight;
+                        // Total (highlighted in orange)
+                        pdf.setFont('helvetica', 'bold');
+                        setTextColor(colors.orange);
+                        pdf.text(item.total.toString(), currentX + colWidths[2]/2, yPos + 5.5, { align: 'center' });
+                        currentX += colWidths[2];
+                        
+                        // Percentage
+                        pdf.setFont('helvetica', 'normal');
+                        setTextColor(colors.gray);
+                        pdf.text(`${percentage}%`, currentX + colWidths[3]/2, yPos + 5.5, { align: 'center' });
+                        
+                        yPos += rowHeight;
                     });
                     
-                    yPosition += 10;
+                    yPos += 10;
                 }
-                
-                // AUDITOR PERFORMANCE SECTION
-                if (visitsByAuditor && visitsByAuditor.length > 0) {
-                    addNewPageIfNeeded(80);
-                    
-                    addText('ANALISIS KINERJA AUDITOR', margin, yPosition, {
-                        fontSize: 14,
-                        fontStyle: 'bold',
-                        color: colors.primary
-                    });
-                    
-                    yPosition += 8;
-                    drawLine(margin, yPosition, pageWidth - margin, yPosition, colors.accent, 2);
-                    yPosition += 15;
-                    
-                    // Table header
-                    drawRect(margin, yPosition, contentWidth, 8, colors.light);
-                    drawRect(margin, yPosition, contentWidth, 8, null, colors.secondary);
-                    
-                    addText('Ranking', margin + 5, yPosition + 5, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.primary
-                    });
-                    
-                    addText('Nama Auditor', margin + 25, yPosition + 5, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.primary
-                    });
-                    
-                    addText('Jumlah Audit', pageWidth - margin - 35, yPosition + 5, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.primary
-                    });
-                    
-                    addText('Produktivitas', pageWidth - margin - 5, yPosition + 5, {
-                        fontSize: 10,
-                        fontStyle: 'bold',
-                        color: colors.primary,
-                        align: 'right'
-                    });
-                    
-                    yPosition += 8;
-                    
-                    // Table rows
-                    visitsByAuditor.slice(0, 10).forEach((auditor, index) => {
-                        const rowHeight = 8;
-                        const isEven = index % 2 === 0;
-                        
-                        if (isEven) {
-                            drawRect(margin, yPosition, contentWidth, rowHeight, [249, 250, 251]);
-                        }
-                        
-                        const auditorName = (auditor.auditor && auditor.auditor.name) || auditor.auditor_name || 'Auditor tidak tersedia';
-                        const productivity = auditor.total > 10 ? 'Tinggi' : auditor.total > 5 ? 'Sedang' : 'Rendah';
-                        const productivityColor = auditor.total > 10 ? colors.success : auditor.total > 5 ? colors.warning : colors.danger;
-                        
-                        addText((index + 1).toString(), margin + 5, yPosition + 5, {
-                            fontSize: 9,
-                            color: colors.secondary
-                        });
-                        
-                        addText(auditorName, margin + 25, yPosition + 5, {
-                            fontSize: 9,
-                            color: colors.primary,
-                            maxWidth: 80
-                        });
-                        
-                        addText(auditor.total.toLocaleString('id-ID'), pageWidth - margin - 35, yPosition + 5, {
-                            fontSize: 9,
-                            fontStyle: 'bold',
-                            color: colors.accent
-                        });
-                        
-                        addText(productivity, pageWidth - margin - 5, yPosition + 5, {
-                            fontSize: 9,
-                            fontStyle: 'bold',
-                            color: productivityColor,
-                            align: 'right'
-                        });
-                        
-                        yPosition += rowHeight;
-                    });
-                    
-                    yPosition += 15;
-                }
-                
+
                 // RECENT ACTIVITIES SECTION
-                if (recentVisits && recentVisits.length > 0) {
-                    addNewPageIfNeeded(80);
+                function createActivities() {
+                    if (!recentVisits || recentVisits.length === 0) return;
                     
-                    addText('AKTIVITAS TERBARU', margin, yPosition, {
-                        fontSize: 14,
-                        fontStyle: 'bold',
-                        color: colors.primary
-                    });
+                    newPageIfNeeded(50);
                     
-                    yPosition += 8;
-                    drawLine(margin, yPosition, pageWidth - margin, yPosition, colors.accent, 2);
-                    yPosition += 15;
+                    // Section header
+                    setFillColor(colors.orange);
+                    pdf.rect(margin, yPos, contentWidth, 6, 'F');
                     
-                    recentVisits.slice(0, 15).forEach((visit, index) => {
-                        addNewPageIfNeeded(20);
-                        
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    setTextColor(colors.white);
+                    pdf.text('AKTIVITAS TERBARU', margin + 5, yPos + 4);
+                    
+                    yPos += 12;
+                    
+                    recentVisits.slice(0, 6).forEach((visit, index) => {
                         const visitId = visit.visit_id || `VST${String(visit.id || 0).padStart(4, '0')}`;
-                        const authorName = (visit.author && visit.author.name) || visit.author_name || 'Author tidak tersedia';
-                        const auditorName = (visit.auditor && visit.auditor.name) || visit.auditor_name || 'Belum ditentukan';
-                        const status = formatStatus(visit.status || 'unknown');
-                        const visitDate = visit.visit_date ? new Date(visit.visit_date).toLocaleDateString('id-ID') : 'Tanggal tidak tersedia';
+                        const authorName = (visit.author_name || 'Unknown').replace(/[^\x20-\x7E]/g, '').substring(0, 20);
+                        const auditorName = (visit.auditor_name || 'Unknown').replace(/[^\x20-\x7E]/g, '').substring(0, 20);
+                        const status = visit.status === 'selesai' ? 'Selesai' : 'Pending';
                         
-                        // Visit card
-                        drawRect(margin, yPosition, contentWidth, 15, [255, 255, 255]);
-                        drawRect(margin, yPosition, contentWidth, 15, null, [229, 231, 235]);
+                        const cardHeight = 10;
                         
-                        // Status indicator
-                        const statusColor = getStatusColor(visit.status);
-                        drawRect(margin, yPosition, 3, 15, statusColor);
+                        // Alternating background
+                        if (index % 2 === 1) {
+                            setFillColor(colors.lightGray);
+                            pdf.rect(margin, yPos, contentWidth, cardHeight, 'F');
+                        }
                         
-                        // Visit ID and Date
-                        addText(`${visitId} - ${visitDate}`, margin + 8, yPosition + 6, {
-                            fontSize: 10,
-                            fontStyle: 'bold',
-                            color: colors.primary
-                        });
+                        // Orange left border
+                        setFillColor(colors.orange);
+                        pdf.rect(margin, yPos, 2, cardHeight, 'F');
                         
-                        // Author and Auditor info
-                        addText(`Author: ${authorName} | Auditor: ${auditorName}`, margin + 8, yPosition + 11, {
-                            fontSize: 9,
-                            color: colors.secondary
-                        });
+                        // Content
+                        pdf.setFontSize(9);
+                        pdf.setFont('helvetica', 'bold');
+                        setTextColor(colors.black);
+                        pdf.text(visitId, margin + 6, yPos + 3);
+                        
+                        pdf.setFontSize(8);
+                        pdf.setFont('helvetica', 'normal');
+                        setTextColor(colors.gray);
+                        pdf.text(`${authorName} → ${auditorName}`, margin + 6, yPos + 7);
                         
                         // Status
-                        addText(status, pageWidth - margin - 5, yPosition + 9, {
-                            fontSize: 9,
-                            fontStyle: 'bold',
-                            color: statusColor,
-                            align: 'right'
-                        });
+                        const statusColor = status === 'Selesai' ? colors.black : colors.orange;
+                        pdf.setFontSize(8);
+                        pdf.setFont('helvetica', 'bold');
+                        setTextColor(statusColor);
+                        pdf.text(status, margin + contentWidth - 20, yPos + 5, { align: 'right' });
                         
-                        yPosition += 18;
+                        yPos += cardHeight + 1;
                     });
                 }
-                
-                // FOOTER AND METADATA
-                const currentDate = new Date().toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                // Add footer to all pages
-                const totalPages = pdf.internal.getNumberOfPages();
-                for (let i = 1; i <= totalPages; i++) {
-                    pdf.setPage(i);
+
+                // SIMPLE FOOTER
+                function addFooter() {
+                    const pageNum = pdf.internal.getCurrentPageInfo().pageNumber;
                     
                     // Footer line
-                    drawLine(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20, colors.secondary, 0.5);
+                    setDrawColor(colors.gray);
+                    pdf.setLineWidth(0.5);
+                    pdf.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
                     
                     // Footer text
-                    addText(`Laporan dibuat pada: ${currentDate}`, margin, pageHeight - 12, {
-                        fontSize: 8,
-                        color: colors.secondary
+                    pdf.setFontSize(8);
+                    pdf.setFont('helvetica', 'normal');
+                    setTextColor(colors.gray);
+                    
+                    const currentDate = new Date().toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
                     });
                     
-                    addText(`Halaman ${i} dari ${totalPages}`, pageWidth - margin, pageHeight - 12, {
-                        fontSize: 8,
-                        color: colors.secondary,
-                        align: 'right'
-                    });
-                    
-                    addText('Sistem Manajemen Kunjungan Auditor - Confidential', pageWidth / 2, pageHeight - 8, {
-                        fontSize: 7,
-                        color: colors.secondary,
-                        align: 'center'
-                    });
+                    pdf.text('Laporan Sistem Kunjungan', margin, pageHeight - 8);
+                    pdf.text(`Dibuat: ${currentDate}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+                    pdf.text(`Halaman ${pageNum}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
                 }
+
+                // BUILD CLEAN REPORT
+                createHeader();
+                createStatistics();
+                createChart();
+                createTable('TOP AUTHOR TERBAIK', visitsByAuthor, true);
+                createTable('TOP AUDITOR TERBAIK', visitsByAuditor, false);
+                createActivities();
                 
-                // Save the PDF with professional naming
-                const filename = `Laporan_Audit_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.pdf`;
+                // Add footers to all pages
+                const totalPages = pdf.internal.getNumberOfPages();
+                for (let page = 1; page <= totalPages; page++) {
+                    pdf.setPage(page);
+                    addFooter();
+                }
+
+                // Generate filename: REPORTS_DD_MM_YYYY.pdf
+                const now = new Date();
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+                const filename = `REPORTS_${day}_${month}_${year}.pdf`;
+                
                 pdf.save(filename);
-                
+
             } catch (error) {
                 console.error('Error generating PDF:', error);
                 alert('Terjadi kesalahan saat menggenerate PDF. Silakan coba lagi.');
@@ -1044,67 +1014,15 @@
             }
         }
         
-        // Helper function for status colors
-        function getStatusColor(status) {
-            const statusColors = {
-                'belum_dikunjungi': [245, 158, 11],   // amber-500
-                'dikonfirmasi': [59, 130, 246],       // blue-500
-                'dalam_perjalanan': [139, 92, 246],   // violet-500
-                'sedang_dikunjungi': [168, 85, 247],  // purple-500
-                'selesai': [34, 197, 94],             // green-500
-                'menunggu_acc': [249, 115, 22]        // orange-500
-            };
-            return statusColors[status] || [107, 114, 128]; // gray-500
-        }
-        
-        // Enhanced Helper functions for professional PDF formatting
+        // Helper functions for clean PDF formatting
         function formatDate(dateString) {
-            if (!dateString) return 'Tidak diketahui';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('id-ID', { 
-                day: '2-digit', 
-                month: 'long', 
-                year: 'numeric' 
-            });
-        }
-        
-        function formatDateTime(dateString) {
-            if (!dateString) return 'Tidak diketahui';
+            if (!dateString) return 'N/A';
             const date = new Date(dateString);
             return date.toLocaleDateString('id-ID', { 
                 day: '2-digit', 
                 month: 'short', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+                year: 'numeric' 
             });
-        }
-        
-        function formatStatus(status) {
-            const statusMap = {
-                'belum_dikunjungi': 'Belum Dikunjungi',
-                'dikonfirmasi': 'Dikonfirmasi',
-                'dalam_perjalanan': 'Dalam Perjalanan',
-                'sedang_dikunjungi': 'Sedang Dikunjungi',
-                'selesai': 'Selesai',
-                'menunggu_acc': 'Menunggu ACC'
-            };
-            return statusMap[status] || 'Status Tidak Diketahui';
-        }
-        
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            }).format(amount || 0);
-        }
-        
-        function capitalizeWords(str) {
-            if (!str) return '';
-            return str.split(' ')
-                     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                     .join(' ');
         }
     </script>
 </body>

@@ -1,10 +1,17 @@
 admin : admin@gmail.com
 pass  : admin987
 
-author(user) : berita@gmail.com
-pass         : berita123
+author(user) : author1@gmail.com
+pass         : author123
 
-jangan lupa : php artisan db:seed, npm run build, dan npm run dev
+author(user) : gwe.writer@gmail.com
+pass         : gwekece
+
+author(auditor) : auditor2@gmail.com
+pass            : auditor123
+
+author(auditor) : auditor2@gmail.com
+pass            : auditor123
 
 akses url login:  http://127.0.0.1:8000/auth/login
 views : http://127.0.0.1:8000
